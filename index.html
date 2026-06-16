@@ -91,18 +91,6 @@
   #insurance-bar.visible { display: flex; }
   #ins-hint { font-size: 0.8rem; color: #c8a0c8; display: none; }
   #ins-hint.visible { display: inline; }
-  /* ── count guess panel ── */
-  #count-guess-panel {
-    display: none; gap: 8px; margin-top: 6px;
-    justify-content: center; align-items: center;
-    color: #c8c880; font-size: 0.9rem;
-  }
-  #count-guess-panel.visible { display: flex; }
-  #rc-guess-input {
-    font-family: monospace; width: 64px; padding: 5px 8px;
-    background: #1a1a10; border: 1px solid #8a8a40;
-    color: #f0d080; font-size: 0.9rem; text-align: center;
-  }
   /* ── stats panel ── */
   #stats-panel {
     display: none; max-width: 660px; width: 100%;
@@ -149,13 +137,6 @@
   <span id="ins-hint">[Strategy: decline — always −EV]</span>
 </div>
 
-<!-- count guess panel — shown before revealing count during an active hand -->
-<div id="count-guess-panel">
-  <span>Your RC guess:</span>
-  <input id="rc-guess-input" type="number" placeholder="±0">
-  <button id="btn-rc-check">Reveal →</button>
-  <button id="btn-rc-skip">Skip</button>
-</div>
 
 <!-- chip betting row -->
 <div id="bet-controls">
@@ -423,7 +404,6 @@ function makeScope(bankrollStart) {
         surrender: { correct:0, incorrect:0 },
       },
     },
-    countGuess: { attempts: 0, correct: 0 },
   };
 }
 
@@ -479,10 +459,6 @@ function catPct(st, cat) {
   const c=st.strategy.byCategory[cat]; const tot=c.correct+c.incorrect;
   return tot===0 ? '—' : `${Math.round(c.correct/tot*100)}%  (${c.correct+c.incorrect})`;
 }
-function guessPct(st) {
-  const g=st.countGuess;
-  return g.attempts===0 ? '—' : `${g.correct}/${g.attempts} (${Math.round(g.correct/g.attempts*100)}%)`;
-}
 function deltaStr(st) {
   const hist=st.bankrollHistory;
   if (hist.length<2) return '—';
@@ -509,8 +485,6 @@ function renderStats() {
       ['  Soft',     catPct(st,'soft'),     true],
       ['  Pairs',    catPct(st,'pairs'),    true],
       ['  Surrender',catPct(st,'surrender'),true],
-      ['sep'],
-      ['RC guesses', guessPct(st)],
     ];
     tbl.innerHTML = rows.map(([k,v,isCat]) => {
       if (k==='sep') return '<tr><td colspan="2" class="sep"></td></tr>';
@@ -614,7 +588,7 @@ let state = {
   bet: 0, pendingBet: 10, bankroll: 1000,
   insuranceBet: 0, splitCount: 0,
   message: '', messageWrong: false, betCoachNote: null,
-  countOverlayVisible: false, waitingForCountGuess: false,
+  countOverlayVisible: false,
   hintsEnabled: false,
   statsPanelOpen: false,
   currentRec: null,
@@ -656,44 +630,6 @@ function computeRec() {
   };
   // Reuse button result
   state.currentRec.reason = actionReason(state.currentRec.button, hand, up);
-}
-
-// ─── COUNT GUESS FLOW ─────────────────────────────────────────────────────────
-
-function showCountGuessPanel() {
-  state.waitingForCountGuess = true;
-  document.getElementById('count-guess-panel').classList.add('visible');
-  setTimeout(() => document.getElementById('rc-guess-input').focus(), 50);
-}
-function hideCountGuessPanel() {
-  state.waitingForCountGuess = false;
-  document.getElementById('count-guess-panel').classList.remove('visible');
-  document.getElementById('rc-guess-input').value = '';
-}
-function submitCountGuess(skip=false) {
-  if (!skip) {
-    const val = document.getElementById('rc-guess-input').value.trim();
-    if (val !== '') {
-      const guess = parseInt(val, 10);
-      if (!isNaN(guess)) {
-        const actual = count.running; const off = Math.abs(guess-actual);
-        const correct = off===0;
-        for (const sc of ['session','allTime']) {
-          stats[sc].countGuess.attempts++;
-          if (correct) stats[sc].countGuess.correct++;
-        }
-        saveAllTime();
-        const s = actual>=0?'+':'';
-        setMsg(correct
-          ? `RC correct! Running count is ${s}${actual}`
-          : `Off by ${off}: RC = ${s}${actual} (guessed ${guess>=0?'+':''}${guess})`);
-        syncMsg();
-      }
-    }
-  }
-  hideCountGuessPanel();
-  state.countOverlayVisible = true;
-  render(); updateButtons();
 }
 
 // ─── GAME ACTIONS ─────────────────────────────────────────────────────────────
@@ -912,7 +848,7 @@ function updateButtons() {
   b('btn-stand').disabled  = !player;
   b('insurance-bar').classList.toggle('visible', ins);
   b('ins-hint').classList.toggle('visible', ins&&state.hintsEnabled);
-  b('btn-count').classList.toggle('active', state.countOverlayVisible||state.waitingForCountGuess);
+  b('btn-count').classList.toggle('active', state.countOverlayVisible);
   b('btn-hints').classList.toggle('active', state.hintsEnabled);
   b('btn-stats').classList.toggle('active', state.statsPanelOpen);
 
@@ -935,15 +871,7 @@ function updateButtons() {
 }
 
 function toggleCount() {
-  if (state.countOverlayVisible) {
-    state.countOverlayVisible=false; hideCountGuessPanel();
-  } else if (state.waitingForCountGuess) {
-    submitCountGuess(true); // second C press = skip and reveal
-  } else {
-    const inHand=[PHASE.PLAYER,PHASE.INSURANCE].includes(state.phase);
-    if (inHand) showCountGuessPanel();
-    else { state.countOverlayVisible=true; }
-  }
+  state.countOverlayVisible = !state.countOverlayVisible;
   render(); updateButtons();
 }
 
@@ -985,14 +913,6 @@ document.getElementById('btn-ins-no').addEventListener('click', ()=>{ declineIns
 document.getElementById('btn-count').addEventListener('click',  ()=> toggleCount());
 document.getElementById('btn-hints').addEventListener('click',  ()=> toggleHints());
 document.getElementById('btn-stats').addEventListener('click',  ()=> toggleStats());
-
-// Count guess panel
-document.getElementById('btn-rc-check').addEventListener('click', ()=> submitCountGuess(false));
-document.getElementById('btn-rc-skip').addEventListener('click',  ()=> submitCountGuess(true));
-document.getElementById('rc-guess-input').addEventListener('keydown', e=>{
-  if (e.key==='Enter')  submitCountGuess(false);
-  if (e.key==='Escape') submitCountGuess(true);
-});
 
 // Stats panel actions
 document.getElementById('btn-new-session').addEventListener('click',  newSession);
