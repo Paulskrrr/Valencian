@@ -347,7 +347,10 @@ function shuffle(arr) {
 class Shoe {
   constructor(numDecks=6) { this.numDecks=numDecks; this.cards=[]; this.dealtCount=0; this.build(); }
   build() { this.cards=[]; for(let d=0;d<this.numDecks;d++) this.cards.push(...makeDeck()); shuffle(this.cards); this.dealtCount=0; }
-  deal(faceUp=true) { const c={...this.cards[this.dealtCount++]}; c.faceUp=faceUp; return c; }
+  deal(faceUp=true) {
+    if (this.dealtCount >= this.cards.length) { this.build(); count.reset(); } // safety: never draw past end
+    const c={...this.cards[this.dealtCount++]}; c.faceUp=faceUp; return c;
+  }
   get remaining() { return this.cards.length - this.dealtCount; }
   get penetration() { return this.dealtCount / this.cards.length; }
   needsShuffle(t=0.75) { return this.penetration >= t; }
@@ -947,16 +950,32 @@ function advanceHand() {
   } else { dealerPlay(); }
 }
 function dealerPlay() {
-  state.phase=PHASE.DEALER; revealHole();
+  state.phase=PHASE.DEALER;
+  revealHole();                       // flip the hole card (animated)
+  render(); updateButtons(); syncMsg();
   const needsPlay=state.hands.some(h=>!h.surrendered&&!isBust(h.cards));
-  if (needsPlay) {
-    while(true) {
-      const {total,soft}=handTotal(state.dealerCards);
-      if(!(total<17||(CONFIG.h17&&soft&&total===17))) break;
-      const card=shoe.deal(); count.countCard(card); state.dealerCards.push(card);
-    }
-  }
+  if (!needsPlay) { finishDealer(); return; }
+  // Step through dealer draws one at a time so each is animated
+  const revealPause = REDUCED ? 0 : 550; // let the hole-card flip finish first
+  setTimeout(dealerStep, revealPause);
+}
+function dealerStep() {
+  const {total,soft}=handTotal(state.dealerCards);
+  const mustHit = total<17 || (CONFIG.h17&&soft&&total===17);
+  if (!mustHit) { finishDealer(); return; }
+  const card=shoe.deal(); count.countCard(card); state.dealerCards.push(card);
+  playSound('deal');
+  const n=state.dealerCards.length;
+  const finalX = cardStartX(n, 290) + (n-1)*CARD_STEP;
+  queueSlide(card, SHOE_X, SHOE_Y, finalX, DEALER_Y, 0);
+  setMsg('Dealer draws. Total: '+handTotal(state.dealerCards).total);
+  render(); updateButtons(); syncMsg();
+  const stepPause = REDUCED ? 0 : 620;
+  setTimeout(dealerStep, stepPause);
+}
+function finishDealer() {
   settleAll();
+  render(); updateButtons(); syncMsg();
 }
 function settleAll() {
   const {total:dTotal}=handTotal(state.dealerCards);
