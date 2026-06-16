@@ -123,10 +123,41 @@
     background: #3a1010; border-color: #7a3030; color: #e09090;
   }
   #stats-actions button.danger:hover:not(:disabled) { background: #5a1818; }
+  /* ── settings panel ── */
+  #settings-panel {
+    display: none; max-width: 660px; width: 100%;
+    margin-top: 12px; background: #0a0a18;
+    border: 1px solid #3a3a6a; padding: 12px 16px;
+  }
+  #settings-panel.open { display: block; }
+  .sett-head { color: #a0a0c8; font-size: 0.75rem; letter-spacing: 1px; margin-bottom: 8px; }
+  .sett-head small { color: #606080; font-weight: normal; }
+  #sett-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px 32px;
+    font-size: 0.82rem;
+  }
+  #sett-grid label {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #9090b8; gap: 8px; padding: 2px 0;
+  }
+  #sett-grid select, #sett-grid input[type="number"] {
+    background: #1a1a2e; border: 1px solid #4a4a8a; color: #d0d0f0;
+    font-family: monospace; font-size: 0.8rem; padding: 3px 6px; min-width: 90px;
+  }
+  #sett-grid input[type="checkbox"] { width: 16px; height: 16px; accent-color: #6060c0; flex-shrink: 0; }
+  .sett-sep {
+    grid-column: 1/-1; color: #606080; font-size: 0.72rem; letter-spacing: 1px;
+    border-top: 1px solid #2a2a4a; padding-top: 6px; margin-top: 4px;
+  }
+  #sett-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: center; }
+  #sett-actions button { font-size: 0.8rem; padding: 6px 16px; min-width: 0; }
+  button.sett-btn { background: #1a1a2e; border-color: #4a4a8a; color: #a0a0d8; }
+  button.sett-btn:hover:not(:disabled) { background: #2a2a4e; }
+  button.sett-btn.active { background: #0a0a1e; border-color: #8080d0; color: #c0c0f0; }
 </style>
 </head>
 <body>
-<h1>BJ TRAINER — PHASE 5</h1>
+<h1>BJ TRAINER — PHASE 6</h1>
 <canvas id="canvas" width="320" height="180"></canvas>
 <div id="message">Place your bet and deal.</div>
 
@@ -157,9 +188,10 @@
   <button id="btn-split"     disabled>Split [P]</button>
   <button id="btn-surrender" disabled>Surrender [R]</button>
   <button id="btn-next"      disabled>Next [N]</button>
-  <button id="btn-count"  class="count-btn">Count [C]</button>
-  <button id="btn-hints"  class="hint-btn">Hints [I]</button>
-  <button id="btn-stats"  class="stats-btn">Stats [T]</button>
+  <button id="btn-count"    class="count-btn">Count [C]</button>
+  <button id="btn-hints"    class="hint-btn">Hints [I]</button>
+  <button id="btn-stats"    class="stats-btn">Stats [T]</button>
+  <button id="btn-settings" class="sett-btn">Settings [G]</button>
 </div>
 
 <!-- stats panel -->
@@ -184,6 +216,68 @@
     <button id="btn-export-stats">Export JSON</button>
     <button id="btn-import-stats">Import JSON</button>
     <input id="import-file" type="file" accept=".json" style="display:none">
+  </div>
+</div>
+
+<!-- settings panel -->
+<div id="settings-panel">
+  <div class="sett-head">TABLE SETTINGS <small>(most take effect next deal/reshuffle)</small></div>
+  <div id="sett-grid">
+    <label>Decks
+      <select id="s-decks">
+        <option>1</option><option>2</option><option>4</option>
+        <option>6</option><option>8</option>
+      </select>
+    </label>
+    <label>Dealer rule
+      <select id="s-h17">
+        <option value="h17">H17 — hits soft 17</option>
+        <option value="s17">S17 — stands soft 17</option>
+      </select>
+    </label>
+    <label>BJ payout
+      <select id="s-payout">
+        <option value="1.5">3:2</option>
+        <option value="1.2">6:5</option>
+        <option value="1">1:1</option>
+      </select>
+    </label>
+    <label>Surrender
+      <select id="s-surrender">
+        <option value="late">Late</option>
+        <option value="none">None</option>
+      </select>
+    </label>
+    <label>Double after split (DAS) <input type="checkbox" id="s-das"></label>
+    <label>Re-split limit
+      <select id="s-resplit">
+        <option>1</option><option>2</option><option>3</option>
+      </select>
+    </label>
+    <label>Split aces: one card each <input type="checkbox" id="s-aces"></label>
+    <label>Double on any 2 cards <input type="checkbox" id="s-dbl-any"></label>
+    <label>Penetration
+      <select id="s-pen">
+        <option value="50">50%</option><option value="55">55%</option>
+        <option value="60">60%</option><option value="65">65%</option>
+        <option value="70">70%</option><option value="75">75%</option>
+        <option value="80">80%</option><option value="85">85%</option>
+        <option value="90">90%</option>
+      </select>
+    </label>
+    <label>Starting bankroll
+      <input type="number" id="s-bankroll" min="10" max="1000000" step="10">
+    </label>
+    <label>Bet unit
+      <input type="number" id="s-betunit" min="1" max="10000" step="1">
+    </label>
+    <div class="sett-sep">FEATURE TOGGLES (take effect immediately)</div>
+    <label>Sound (Phase 7) <input type="checkbox" id="s-sound"></label>
+    <label>Index deviations <input type="checkbox" id="s-devs"></label>
+  </div>
+  <div id="sett-actions">
+    <button id="btn-sett-apply">Apply & Close</button>
+    <button id="btn-sett-cancel">Cancel</button>
   </div>
 </div>
 
@@ -572,25 +666,97 @@ function importStats(file) {
   reader.readAsText(file);
 }
 
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+
+function populateSettings() {
+  const s = id => document.getElementById(id);
+  s('s-decks').value    = CONFIG.numDecks;
+  s('s-h17').value      = CONFIG.h17 ? 'h17' : 's17';
+  s('s-payout').value   = CONFIG.bjPayout;
+  s('s-surrender').value= CONFIG.surrender;
+  s('s-das').checked    = CONFIG.das;
+  s('s-resplit').value  = CONFIG.resplitMax;
+  s('s-aces').checked   = CONFIG.splitAcesOneCard;
+  s('s-dbl-any').checked= CONFIG.doubleAnyTwo;
+  s('s-pen').value      = Math.round(CONFIG.penetration * 100);
+  s('s-bankroll').value = CONFIG.startingBankroll;
+  s('s-betunit').value  = CONFIG.betUnit;
+  s('s-sound').checked  = CONFIG.soundEnabled;
+  s('s-devs').checked   = CONFIG.indexDeviations;
+}
+
+function applySettings() {
+  const s = id => document.getElementById(id);
+  const prevDecks = CONFIG.numDecks;
+  CONFIG.numDecks         = parseInt(s('s-decks').value, 10);
+  CONFIG.h17              = s('s-h17').value === 'h17';
+  CONFIG.bjPayout         = parseFloat(s('s-payout').value);
+  CONFIG.surrender        = s('s-surrender').value;
+  CONFIG.das              = s('s-das').checked;
+  CONFIG.resplitMax       = parseInt(s('s-resplit').value, 10);
+  CONFIG.splitAcesOneCard = s('s-aces').checked;
+  CONFIG.doubleAnyTwo     = s('s-dbl-any').checked;
+  CONFIG.penetration      = parseInt(s('s-pen').value, 10) / 100;
+  CONFIG.startingBankroll = Math.max(10, parseInt(s('s-bankroll').value, 10) || 1000);
+  CONFIG.betUnit          = Math.max(1, parseInt(s('s-betunit').value, 10) || 10);
+  CONFIG.soundEnabled     = s('s-sound').checked;
+  CONFIG.indexDeviations  = s('s-devs').checked;
+  if (prevDecks !== CONFIG.numDecks) { shoe = new Shoe(CONFIG.numDecks); count.reset(); }
+  saveSettings();
+  closeSettings();
+  setMsg('Settings applied.'); syncMsg();
+}
+
+function toggleSettings() {
+  if (state.settingsPanelOpen) { closeSettings(); return; }
+  openSettings();
+}
+function openSettings() {
+  if (state.statsPanelOpen) { state.statsPanelOpen=false; document.getElementById('stats-panel').classList.remove('open'); }
+  state.settingsPanelOpen = true;
+  document.getElementById('settings-panel').classList.add('open');
+  populateSettings();
+  updateButtons();
+}
+function closeSettings() {
+  state.settingsPanelOpen = false;
+  document.getElementById('settings-panel').classList.remove('open');
+  updateButtons();
+}
+
 // ─── GAME STATE ───────────────────────────────────────────────────────────────
 
 const CONFIG = {
   numDecks: 6, penetration: 0.75, h17: true, bjPayout: 1.5,
   surrender: 'late', das: true, resplitMax: 3, splitAcesOneCard: true,
-  doubleAnyTwo: true, betUnit: 10,
+  doubleAnyTwo: true, betUnit: 10, startingBankroll: 1000,
+  soundEnabled: true, indexDeviations: false,
 };
+
+const SETTINGS_KEY = 'bj_settings_v1';
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(CONFIG)); } catch(e) {}
+}
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) { const p=JSON.parse(raw); Object.assign(CONFIG, p); }
+  } catch(e) {}
+}
+loadSettings(); // apply persisted settings before shoe/state init
 
 const PHASE = { IDLE:'idle', PLAYER:'player', INSURANCE:'insurance', DEALER:'dealer', DONE:'done' };
 
 let shoe = new Shoe(CONFIG.numDecks);
 let state = {
   phase: PHASE.IDLE, hands: [], activeHandIdx: 0, dealerCards: [],
-  bet: 0, pendingBet: 10, bankroll: 1000,
+  bet: 0, pendingBet: CONFIG.betUnit, bankroll: CONFIG.startingBankroll,
   insuranceBet: 0, splitCount: 0,
   message: '', messageWrong: false, betCoachNote: null,
   countOverlayVisible: false,
   hintsEnabled: false,
   statsPanelOpen: false,
+  settingsPanelOpen: false,
   currentRec: null,
 };
 
@@ -851,6 +1017,7 @@ function updateButtons() {
   b('btn-count').classList.toggle('active', state.countOverlayVisible);
   b('btn-hints').classList.toggle('active', state.hintsEnabled);
   b('btn-stats').classList.toggle('active', state.statsPanelOpen);
+  b('btn-settings').classList.toggle('active', state.settingsPanelOpen);
 
   ['chip-1','chip-5','chip-25','chip-100','btn-clear-bet'].forEach(id=>b(id).disabled=!betting);
 
@@ -877,10 +1044,11 @@ function toggleCount() {
 
 function toggleHints()  { state.hintsEnabled=!state.hintsEnabled; state.messageWrong=false; render(); updateButtons(); syncMsg(); }
 function toggleStats()  {
-  state.statsPanelOpen=!state.statsPanelOpen;
-  document.getElementById('stats-panel').classList.toggle('open', state.statsPanelOpen);
-  if (state.statsPanelOpen) renderStats();
-  updateButtons();
+  if (state.statsPanelOpen) { state.statsPanelOpen=false; document.getElementById('stats-panel').classList.remove('open'); updateButtons(); return; }
+  if (state.settingsPanelOpen) closeSettings();
+  state.statsPanelOpen=true;
+  document.getElementById('stats-panel').classList.add('open');
+  renderStats(); updateButtons();
 }
 
 function syncMsg() {
@@ -910,9 +1078,12 @@ document.getElementById('btn-next').addEventListener('click',()=>{
 });
 document.getElementById('btn-ins-yes').addEventListener('click',()=>{ takeInsurance();   refresh(); });
 document.getElementById('btn-ins-no').addEventListener('click', ()=>{ declineInsurance(); refresh(); });
-document.getElementById('btn-count').addEventListener('click',  ()=> toggleCount());
-document.getElementById('btn-hints').addEventListener('click',  ()=> toggleHints());
-document.getElementById('btn-stats').addEventListener('click',  ()=> toggleStats());
+document.getElementById('btn-count').addEventListener('click',    ()=> toggleCount());
+document.getElementById('btn-hints').addEventListener('click',    ()=> toggleHints());
+document.getElementById('btn-stats').addEventListener('click',    ()=> toggleStats());
+document.getElementById('btn-settings').addEventListener('click', ()=> toggleSettings());
+document.getElementById('btn-sett-apply').addEventListener('click',  applySettings);
+document.getElementById('btn-sett-cancel').addEventListener('click', closeSettings);
 
 // Stats panel actions
 document.getElementById('btn-new-session').addEventListener('click',  newSession);
@@ -937,6 +1108,7 @@ document.addEventListener('keydown', e=>{
   else if (k==='C') toggleCount();
   else if (k==='I') toggleHints();
   else if (k==='T') toggleStats();
+  else if (k==='G') toggleSettings();
 });
 
 // Boot
