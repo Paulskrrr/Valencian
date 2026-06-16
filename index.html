@@ -1241,7 +1241,7 @@ function drawTable() {
 
 function drawCard(card, x, y, flipProg) {
   if (flipProg === undefined) flipProg = 1;
-  const scaleX = Math.abs(Math.cos(flipProg * Math.PI * 0.5));
+  const scaleX = Math.abs(Math.cos(flipProg * Math.PI));
   const effectiveW = CARD_W * scaleX;
   const offsetX = (CARD_W - effectiveW) / 2;
 
@@ -1250,7 +1250,7 @@ function drawCard(card, x, y, flipProg) {
   ctx.scale(scaleX, 1);
 
   // Determine if showing back or face
-  const showFace = flipProg > 0.5 ? card.faceUp : !card.faceUp;
+  const showFace = flipProg >= 0.5 && card.faceUp;
 
   if (!showFace) {
     // Card back
