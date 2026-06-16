@@ -314,6 +314,7 @@
     <div class="sett-sep">FEATURE TOGGLES (take effect immediately)</div>
     <label>Sound <input type="checkbox" id="s-sound"></label>
     <label>Index deviations <input type="checkbox" id="s-devs"></label>
+    <label>Dealer peek / US rules <input type="checkbox" id="s-peek"></label>
   </div>
   <div id="sett-actions">
     <button id="btn-sett-apply">Apply &amp; Close</button>
@@ -726,6 +727,7 @@ function populateSettings() {
   s('s-betunit').value  = CONFIG.betUnit;
   s('s-sound').checked  = CONFIG.soundEnabled;
   s('s-devs').checked   = CONFIG.indexDeviations;
+  s('s-peek').checked   = CONFIG.peek;
 }
 
 function applySettings() {
@@ -744,6 +746,7 @@ function applySettings() {
   CONFIG.betUnit          = Math.max(1, parseInt(s('s-betunit').value, 10) || 10);
   CONFIG.soundEnabled     = s('s-sound').checked;
   CONFIG.indexDeviations  = s('s-devs').checked;
+  CONFIG.peek             = s('s-peek').checked;
   if (prevDecks !== CONFIG.numDecks) { shoe = new Shoe(CONFIG.numDecks); count.reset(); }
   saveSettings();
   closeSettings();
@@ -773,7 +776,7 @@ const CONFIG = {
   numDecks: 6, penetration: 0.75, h17: true, bjPayout: 1.5,
   surrender: 'late', das: true, resplitMax: 3, splitAcesOneCard: true,
   doubleAnyTwo: true, betUnit: 10, startingBankroll: 1000,
-  soundEnabled: true, indexDeviations: false,
+  soundEnabled: true, indexDeviations: false, peek: true,
 };
 
 const SETTINGS_KEY = 'bj_settings_v1';
@@ -881,6 +884,17 @@ function revealHole() {
 }
 function checkImmediateBlackjack() {
   const hand=state.hands[0];
+  // Peek: dealer checks hole card when showing 10/A (US rules)
+  if (CONFIG.peek && isBlackjack(state.dealerCards)) {
+    revealHole();
+    // Pay insurance if taken
+    if (state.insuranceBet>0) { state.bankroll+=state.insuranceBet*3; } // bet returned + 2:1 profit
+    if (isBlackjack(hand.cards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); }
+    else                         { settleHand(hand,'lose'); setMsg('Dealer has blackjack.'); playSound('lose'); }
+    state.phase=PHASE.DONE; finishRound(); return;
+  }
+  // No peek or dealer doesn't have BJ: handle insurance loss (already deducted)
+  // Nothing to deduct — it was taken off bankroll in takeInsurance()
   if (isBlackjack(hand.cards)) {
     revealHole();
     if (isBlackjack(state.dealerCards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); }
@@ -890,7 +904,7 @@ function checkImmediateBlackjack() {
   state.phase=PHASE.PLAYER;
   if (!state.messageWrong && !state.betCoachNote) setMsg('Your turn.');
 }
-function takeInsurance()   { state.insuranceBet=Math.floor(state.bet/2); state.phase=PHASE.PLAYER; setMsg('Insurance taken.'); checkImmediateBlackjack(); }
+function takeInsurance()   { state.insuranceBet=Math.floor(state.bet/2); state.bankroll-=state.insuranceBet; state.phase=PHASE.PLAYER; setMsg('Insurance taken.'); checkImmediateBlackjack(); }
 function declineInsurance(){ state.insuranceBet=0; state.phase=PHASE.PLAYER; setMsg('No insurance.'); checkImmediateBlackjack(); }
 function activeHand() { return state.hands[state.activeHandIdx]; }
 
@@ -980,11 +994,16 @@ function finishDealer() {
 function settleAll() {
   const {total:dTotal}=handTotal(state.dealerCards);
   const dBust=isBust(state.dealerCards), dBJ=isBlackjack(state.dealerCards);
-  if (state.insuranceBet>0&&dBJ) state.bankroll+=state.insuranceBet*2;
+  // No-peek mode: insurance settled here (peek mode resolves in checkImmediateBlackjack)
+  if (!CONFIG.peek && state.insuranceBet>0) {
+    if (dBJ) state.bankroll+=state.insuranceBet*3; // return bet + 2:1 profit
+    // if no BJ, bet was already deducted in takeInsurance — nothing more to do
+  }
   for (const hand of state.hands) {
     if (hand.surrendered)   { settleHand(hand,'surrender'); continue; }
     if (isBust(hand.cards)) { settleHand(hand,'lose');      continue; }
     if (dBust)               { settleHand(hand,'win');       continue; }
+    if (dBJ && !isBlackjack(hand.cards)) { settleHand(hand,'lose'); continue; }
     const {total:pT}=handTotal(hand.cards);
     if(pT>dTotal) settleHand(hand,'win'); else if(pT<dTotal) settleHand(hand,'lose'); else settleHand(hand,'push');
   }
