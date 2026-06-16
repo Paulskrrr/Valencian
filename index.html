@@ -123,6 +123,7 @@
   }
   #btn-clear-bet:hover:not(:disabled) { background: #3A2010; }
   #btn-clear-bet:disabled { opacity: 0.3; cursor: not-allowed; }
+  #btn-deal { display: none; }
 
   /* ── stats panel ── */
   #stats-panel {
@@ -851,8 +852,12 @@ function deal() {
   state.dealerCards=[d1,d2]; state.insuranceBet=0; state.splitCount=0; state.currentRec=null;
   state.phase=PHASE.PLAYER;
   setMsg(state.betCoachNote ?? 'Your turn.');
-  // Sound & slide animations for deal
-  playSound('deal');
+  // Sound & slide animations for deal — each card gets its own staggered sound
+  const STAGGER = 200;
+  playSoundAt('deal', 0);
+  playSoundAt('deal', STAGGER);
+  playSoundAt('deal', STAGGER * 2);
+  playSoundAt('deal', STAGGER * 3);
   const numHands = 1;
   const cx = handCenterX(0, numHands);
   const p1X = cardStartX(2, cx), p1Y = PLAYER_Y;
@@ -860,9 +865,9 @@ function deal() {
   const d1X = cardStartX(2, 290), d1Y = DEALER_Y;
   const d2X = d1X + CARD_STEP,   d2Y = DEALER_Y;
   queueSlide(p1, SHOE_X, SHOE_Y, p1X, p1Y, 0);
-  queueSlide(d1, SHOE_X, SHOE_Y, d1X, d1Y, 120);
-  queueSlide(p2, SHOE_X, SHOE_Y, p2X, p2Y, 240);
-  queueSlide(d2, SHOE_X, SHOE_Y, d2X, d2Y, 360);
+  queueSlide(d1, SHOE_X, SHOE_Y, d1X, d1Y, STAGGER);
+  queueSlide(p2, SHOE_X, SHOE_Y, p2X, p2Y, STAGGER * 2);
+  queueSlide(d2, SHOE_X, SHOE_Y, d2X, d2Y, STAGGER * 3);
   if (d1.rank==='A') { state.phase=PHASE.INSURANCE; setMsg('Dealer shows Ace. Insurance?'); return; }
   checkImmediateBlackjack();
 }
@@ -1015,7 +1020,7 @@ function renderFrame() {
 
 // Check prefers-reduced-motion
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ANIM_DUR = REDUCED ? 0 : 280; // slide duration ms
+const ANIM_DUR = REDUCED ? 0 : 350; // slide duration ms
 const FLIP_DUR = REDUCED ? 0 : 180;
 
 function queueSlide(card, x0, y0, x1, y1, delay) {
@@ -1086,21 +1091,32 @@ function playSound(type) {
   const now = ac.currentTime;
 
   if (type === 'deal') {
-    // Noise burst — papery "thwap" of card hitting felt
+    // Noise through swept lowpass: starts bright (card edge impact) → damps fast (felt)
     const sr = ac.sampleRate;
-    const dur = 0.06;
+    const dur = 0.08;
     const buf = ac.createBuffer(1, Math.ceil(sr * dur), sr);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    const bp = ac.createBiquadFilter();
-    bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.8;
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(7000, now);
+    lp.frequency.exponentialRampToValueAtTime(280, now + 0.032);
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.6, now);
+    g.gain.setValueAtTime(0.55, now);
     g.gain.exponentialRampToValueAtTime(0.001, now + dur);
     const src = ac.createBufferSource();
     src.buffer = buf;
-    src.connect(bp); bp.connect(g); g.connect(ac.destination);
+    src.connect(lp); lp.connect(g); g.connect(ac.destination);
     src.start(now); src.stop(now + dur);
+    // Low body thump (card weight hitting surface)
+    const osc2 = ac.createOscillator(), g2 = ac.createGain();
+    osc2.connect(g2); g2.connect(ac.destination);
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(110, now);
+    osc2.frequency.exponentialRampToValueAtTime(42, now + 0.04);
+    g2.gain.setValueAtTime(0.14, now);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+    osc2.start(now); osc2.stop(now + 0.05);
   } else if (type === 'win') {
     // Rising major arpeggio: C5 E5 G5
     [[523, 0], [659, 0.1], [784, 0.2]].forEach(([freq, delay]) => {
@@ -1133,6 +1149,11 @@ function playSound(type) {
       osc.start(now+delay); osc.stop(now+delay+0.38);
     });
   }
+}
+
+function playSoundAt(type, delayMs) {
+  if (REDUCED || delayMs <= 0) { playSound(type); return; }
+  setTimeout(() => playSound(type), delayMs);
 }
 
 // ─── RENDERER ────────────────────────────────────────────────────────────────
@@ -1663,7 +1684,12 @@ document.getElementById('import-file').addEventListener('change', e=>{
 document.addEventListener('keydown', e=>{
   if (e.target.tagName==='INPUT') return;
   const b=id=>document.getElementById(id);
-  if (e.key===' '&&!b('btn-hit').disabled)     { e.preventDefault(); b('btn-hit').click(); return; }
+  if (e.key===' ') {
+    e.preventDefault();
+    if (!b('btn-hit').disabled)  { b('btn-hit').click();  return; }
+    if (!b('btn-deal').disabled) { b('btn-deal').click(); return; }
+    return;
+  }
   if (e.key==='Enter'&&!b('btn-stand').disabled){ b('btn-stand').click(); return; }
   const k=e.key.toUpperCase();
   if      (k==='D'&&!b('btn-deal').disabled)      b('btn-deal').click();
