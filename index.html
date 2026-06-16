@@ -26,23 +26,13 @@
   }
   /* ── chip row ── */
   #bet-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-    justify-content: center;
-    align-items: center;
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 8px; justify-content: center; align-items: center;
   }
   button.chip {
-    font-family: monospace;
-    font-size: 0.85rem;
-    font-weight: bold;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border-width: 3px;
-    cursor: pointer;
-    position: relative;
+    font-family: monospace; font-size: 0.85rem; font-weight: bold;
+    width: 44px; height: 44px; border-radius: 50%; border-width: 3px;
+    cursor: pointer; position: relative;
   }
   button.chip-1   { background: #444; border-color: #aaa; color: #eee; }
   button.chip-5   { background: #7a0000; border-color: #d04040; color: #ffc0c0; }
@@ -58,22 +48,13 @@
   button.chip-clear:disabled { opacity: 0.3; cursor: not-allowed; }
   /* ── action row ── */
   #controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
-    justify-content: center;
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 8px; justify-content: center;
   }
   button {
-    font-family: monospace;
-    font-size: 0.9rem;
-    padding: 8px 18px;
-    background: #2a4a2a;
-    color: #c8e8c8;
-    border: 2px solid #4a7a4a;
-    cursor: pointer;
-    min-width: 80px;
-    position: relative;
+    font-family: monospace; font-size: 0.9rem; padding: 8px 18px;
+    background: #2a4a2a; color: #c8e8c8; border: 2px solid #4a7a4a;
+    cursor: pointer; min-width: 80px; position: relative;
   }
   button:hover:not(:disabled) { background: #3a6a3a; }
   button:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -85,48 +66,95 @@
   button.hint-btn { background: #2a1a2a; border-color: #6a3a6a; color: #c8a0c8; }
   button.hint-btn:hover:not(:disabled) { background: #3a2a3a; }
   button.hint-btn.active { background: #3a0a3a; border-color: #c040c0; color: #f0b0f0; }
+  button.stats-btn { background: #1a2a3a; border-color: #3a5a7a; color: #90b8d8; }
+  button.stats-btn:hover:not(:disabled) { background: #2a3a4a; }
+  button.stats-btn.active { background: #0a1828; border-color: #60a0d0; color: #b0d8f8; }
   button.recommended {
-    outline: 2px solid #f0d040;
-    outline-offset: 2px;
+    outline: 2px solid #f0d040; outline-offset: 2px;
     box-shadow: 0 0 6px #f0d04088;
   }
   button.recommended::after {
-    content: '★';
-    position: absolute;
-    top: -7px; right: 2px;
-    font-size: 8px;
-    color: #f0d040;
+    content: '★'; position: absolute; top: -7px; right: 2px;
+    font-size: 8px; color: #f0d040;
   }
+  /* ── message ── */
   #message {
-    font-size: 0.95rem;
-    margin-top: 8px;
-    min-height: 1.4em;
-    color: #f0d080;
-    text-align: center;
-    max-width: 660px;
+    font-size: 0.95rem; margin-top: 8px; min-height: 1.4em;
+    color: #f0d080; text-align: center; max-width: 660px;
   }
   #message.wrong { color: #f09090; }
+  /* ── insurance bar ── */
   #insurance-bar {
-    display: none;
-    gap: 8px;
-    margin-top: 6px;
-    justify-content: center;
-    align-items: center;
+    display: none; gap: 8px; margin-top: 6px;
+    justify-content: center; align-items: center;
   }
   #insurance-bar.visible { display: flex; }
   #ins-hint { font-size: 0.8rem; color: #c8a0c8; display: none; }
   #ins-hint.visible { display: inline; }
+  /* ── count guess panel ── */
+  #count-guess-panel {
+    display: none; gap: 8px; margin-top: 6px;
+    justify-content: center; align-items: center;
+    color: #c8c880; font-size: 0.9rem;
+  }
+  #count-guess-panel.visible { display: flex; }
+  #rc-guess-input {
+    font-family: monospace; width: 64px; padding: 5px 8px;
+    background: #1a1a10; border: 1px solid #8a8a40;
+    color: #f0d080; font-size: 0.9rem; text-align: center;
+  }
+  /* ── stats panel ── */
+  #stats-panel {
+    display: none; max-width: 660px; width: 100%;
+    margin-top: 12px; background: #0a180a;
+    border: 1px solid #3a5a3a; padding: 12px 16px;
+  }
+  #stats-panel.open { display: block; }
+  #stats-grid {
+    display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
+  }
+  .stat-col { flex: 1; min-width: 180px; }
+  .stat-header {
+    color: #a0c8a0; font-size: 0.75rem; letter-spacing: 1px;
+    margin-bottom: 6px; border-bottom: 1px solid #2a4a2a; padding-bottom: 4px;
+  }
+  .stat-tbl { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .stat-tbl .sk { color: #6a9a6a; padding: 2px 2px 2px 0; white-space: nowrap; }
+  .stat-tbl .sv { color: #c0e0c0; padding: 2px 0; text-align: right; }
+  .stat-tbl .sep { border-top: 1px solid #1e321e; height: 4px; }
+  .stat-tbl .cat-row .sk { color: #507050; font-size: 0.75rem; padding-left: 8px; }
+  #sparkline-wrap { margin: 10px auto 0; text-align: center; }
+  #sparkline-wrap .lbl { font-size: 0.7rem; color: #446644; margin-bottom: 4px; }
+  #sparkline { display: block; border: 1px solid #2a4a2a; }
+  #stats-actions {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 10px; justify-content: center;
+  }
+  #stats-actions button { font-size: 0.8rem; padding: 6px 12px; min-width: 0; }
+  #stats-actions button.danger {
+    background: #3a1010; border-color: #7a3030; color: #e09090;
+  }
+  #stats-actions button.danger:hover:not(:disabled) { background: #5a1818; }
 </style>
 </head>
 <body>
-<h1>BJ TRAINER — PHASE 4</h1>
+<h1>BJ TRAINER — PHASE 5</h1>
 <canvas id="canvas" width="320" height="180"></canvas>
 <div id="message">Place your bet and deal.</div>
+
 <div id="insurance-bar">
   <span style="color:#f0d080">Insurance?</span>
   <button id="btn-ins-yes">Take</button>
   <button id="btn-ins-no">Decline</button>
   <span id="ins-hint">[Strategy: decline — always −EV]</span>
+</div>
+
+<!-- count guess panel — shown before revealing count during an active hand -->
+<div id="count-guess-panel">
+  <span>Your RC guess:</span>
+  <input id="rc-guess-input" type="number" placeholder="±0">
+  <button id="btn-rc-check">Reveal →</button>
+  <button id="btn-rc-skip">Skip</button>
 </div>
 
 <!-- chip betting row -->
@@ -150,6 +178,32 @@
   <button id="btn-next"      disabled>Next [N]</button>
   <button id="btn-count"  class="count-btn">Count [C]</button>
   <button id="btn-hints"  class="hint-btn">Hints [I]</button>
+  <button id="btn-stats"  class="stats-btn">Stats [T]</button>
+</div>
+
+<!-- stats panel -->
+<div id="stats-panel">
+  <div id="stats-grid">
+    <div class="stat-col">
+      <div class="stat-header">THIS SESSION</div>
+      <table class="stat-tbl" id="tbl-session"></table>
+    </div>
+    <div class="stat-col">
+      <div class="stat-header">ALL TIME</div>
+      <table class="stat-tbl" id="tbl-alltime"></table>
+    </div>
+  </div>
+  <div id="sparkline-wrap">
+    <div class="lbl">Session bankroll</div>
+    <canvas id="sparkline" width="300" height="52"></canvas>
+  </div>
+  <div id="stats-actions">
+    <button id="btn-new-session">New session</button>
+    <button id="btn-reset-all" class="danger">Reset all</button>
+    <button id="btn-export-stats">Export JSON</button>
+    <button id="btn-import-stats">Import JSON</button>
+    <input id="import-file" type="file" accept=".json" style="display:none">
+  </div>
 </div>
 
 <script>
@@ -165,62 +219,35 @@ function cardValue(rank) {
   if (['10','J','Q','K'].includes(rank)) return 10;
   return parseInt(rank, 10);
 }
-
 function makeDeck() {
   const deck = [];
-  for (const suit of SUITS)
-    for (const rank of RANKS)
-      deck.push({ rank, suit, faceUp: true });
+  for (const suit of SUITS) for (const rank of RANKS) deck.push({ rank, suit, faceUp: true });
   return deck;
 }
-
 function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+  for (let i = arr.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]] = [arr[j],arr[i]];
   }
 }
-
 class Shoe {
-  constructor(numDecks = 6) {
-    this.numDecks = numDecks;
-    this.cards = [];
-    this.dealtCount = 0;
-    this.build();
-  }
-  build() {
-    this.cards = [];
-    for (let d = 0; d < this.numDecks; d++)
-      this.cards.push(...makeDeck());
-    shuffle(this.cards);
-    this.dealtCount = 0;
-  }
-  deal(faceUp = true) {
-    const c = { ...this.cards[this.dealtCount++] };
-    c.faceUp = faceUp;
-    return c;
-  }
+  constructor(numDecks=6) { this.numDecks=numDecks; this.cards=[]; this.dealtCount=0; this.build(); }
+  build() { this.cards=[]; for(let d=0;d<this.numDecks;d++) this.cards.push(...makeDeck()); shuffle(this.cards); this.dealtCount=0; }
+  deal(faceUp=true) { const c={...this.cards[this.dealtCount++]}; c.faceUp=faceUp; return c; }
   get remaining() { return this.cards.length - this.dealtCount; }
   get penetration() { return this.dealtCount / this.cards.length; }
-  needsShuffle(threshold = 0.75) { return this.penetration >= threshold; }
+  needsShuffle(t=0.75) { return this.penetration >= t; }
 }
-
 function handTotal(cards) {
-  let total = 0, aces = 0;
-  for (const c of cards) {
-    if (!c.faceUp) continue;
-    total += cardValue(c.rank);
-    if (c.rank === 'A') aces++;
-  }
-  while (total > 21 && aces > 0) { total -= 10; aces--; }
-  return { total, soft: aces > 0 && total <= 21 };
+  let total=0, aces=0;
+  for (const c of cards) { if (!c.faceUp) continue; total+=cardValue(c.rank); if(c.rank==='A') aces++; }
+  while (total>21 && aces>0) { total-=10; aces--; }
+  return { total, soft: aces>0 && total<=21 };
 }
-
 function isBust(cards)      { return handTotal(cards).total > 21; }
 function isBlackjack(cards) {
-  if (cards.length !== 2) return false;
-  const r = cards.map(c => c.rank);
-  return r.includes('A') && r.some(x => ['10','J','Q','K'].includes(x));
+  if (cards.length!==2) return false;
+  const r=cards.map(c=>c.rank);
+  return r.includes('A') && r.some(x=>['10','J','Q','K'].includes(x));
 }
 
 // ─── HI-LO COUNT ─────────────────────────────────────────────────────────────
@@ -230,684 +257,769 @@ function hiloValue(rank) {
   if (['7','8','9'].includes(rank))         return  0;
   return -1;
 }
-
 const count = {
   running: 0,
   countCard(card) { this.running += hiloValue(card.rank); },
   reset()         { this.running = 0; },
-  trueCount() {
-    const decksLeft = shoe.remaining / 52;
-    return this.running / Math.max(0.5, Math.round(decksLeft * 2) / 2);
-  },
+  trueCount() { return this.running / Math.max(0.5, Math.round(shoe.remaining/52*2)/2); },
 };
 
 // ─── STRATEGY TABLES ─────────────────────────────────────────────────────────
 
 function upcardIdx(card) {
-  const r = card.rank;
-  if (r === 'A') return 9;
-  if (['10','J','Q','K'].includes(r)) return 8;
-  return parseInt(r, 10) - 2;
+  const r=card.rank; if(r==='A') return 9; if(['10','J','Q','K'].includes(r)) return 8; return parseInt(r,10)-2;
 }
 function pairKey(rank) { return ['10','J','Q','K'].includes(rank) ? 'T' : rank; }
 
 const PAIRS = {
-  'A': ['Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y'],
-  'T': ['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],
-  '9': ['Y', 'Y', 'Y', 'Y', 'Y', 'N', 'Y', 'Y', 'N', 'N'],
-  '8': ['Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y'],
-  '7': ['Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'N', 'N', 'N', 'N'],
-  '6': ['YN','Y', 'Y', 'Y', 'Y', 'N', 'N', 'N', 'N', 'N'],
-  '5': ['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'],
-  '4': ['N', 'N', 'N', 'YN','YN','N', 'N', 'N', 'N', 'N'],
-  '3': ['YN','YN','Y', 'Y', 'Y', 'Y', 'N', 'N', 'N', 'N'],
-  '2': ['YN','YN','Y', 'Y', 'Y', 'Y', 'N', 'N', 'N', 'N'],
+  'A':['Y','Y','Y','Y','Y','Y','Y','Y','Y','Y'], 'T':['N','N','N','N','N','N','N','N','N','N'],
+  '9':['Y','Y','Y','Y','Y','N','Y','Y','N','N'], '8':['Y','Y','Y','Y','Y','Y','Y','Y','Y','Y'],
+  '7':['Y','Y','Y','Y','Y','Y','N','N','N','N'], '6':['YN','Y','Y','Y','Y','N','N','N','N','N'],
+  '5':['N','N','N','N','N','N','N','N','N','N'], '4':['N','N','N','YN','YN','N','N','N','N','N'],
+  '3':['YN','YN','Y','Y','Y','Y','N','N','N','N'],'2':['YN','YN','Y','Y','Y','Y','N','N','N','N'],
 };
-
 const SOFT_H17 = {
-  20: ['S','S','S','S','S','S','S','S','S','S'],
-  19: ['S','S','S','S','S','S','S','S','S','S'],
-  18: ['Ds','Ds','Ds','Ds','Ds','S','S','H','H','H'],
-  17: ['H','D','D','D','D','H','H','H','H','H'],
-  16: ['H','H','D','D','D','H','H','H','H','H'],
-  15: ['H','H','D','D','D','H','H','H','H','H'],
-  14: ['H','H','H','D','D','H','H','H','H','H'],
-  13: ['H','H','H','D','D','H','H','H','H','H'],
+  20:['S','S','S','S','S','S','S','S','S','S'], 19:['S','S','S','S','S','S','S','S','S','S'],
+  18:['Ds','Ds','Ds','Ds','Ds','S','S','H','H','H'], 17:['H','D','D','D','D','H','H','H','H','H'],
+  16:['H','H','D','D','D','H','H','H','H','H'], 15:['H','H','D','D','D','H','H','H','H','H'],
+  14:['H','H','H','D','D','H','H','H','H','H'], 13:['H','H','H','D','D','H','H','H','H','H'],
 };
 const SOFT_S17 = {
-  20: ['S','S','S','S','S','S','S','S','S','S'],
-  19: ['S','S','S','S','Ds','S','S','S','S','S'],
-  18: ['Ds','Ds','Ds','Ds','Ds','S','S','H','H','H'],
-  17: ['H','D','D','D','D','H','H','H','H','H'],
-  16: ['H','H','D','D','D','H','H','H','H','H'],
-  15: ['H','H','D','D','D','H','H','H','H','H'],
-  14: ['H','H','H','D','D','H','H','H','H','H'],
-  13: ['H','H','H','D','D','H','H','H','H','H'],
+  20:['S','S','S','S','S','S','S','S','S','S'], 19:['S','S','S','S','Ds','S','S','S','S','S'],
+  18:['Ds','Ds','Ds','Ds','Ds','S','S','H','H','H'], 17:['H','D','D','D','D','H','H','H','H','H'],
+  16:['H','H','D','D','D','H','H','H','H','H'], 15:['H','H','D','D','D','H','H','H','H','H'],
+  14:['H','H','H','D','D','H','H','H','H','H'], 13:['H','H','H','D','D','H','H','H','H','H'],
 };
 const HARD = {
-  17: ['S','S','S','S','S','S','S','S','S','S'],
-  16: ['S','S','S','S','S','H','H','H','H','H'],
-  15: ['S','S','S','S','S','H','H','H','H','H'],
-  14: ['S','S','S','S','S','H','H','H','H','H'],
-  13: ['S','S','S','S','S','H','H','H','H','H'],
-  12: ['H','H','S','S','S','H','H','H','H','H'],
-  11: ['D','D','D','D','D','D','D','D','D','D'],
-  10: ['D','D','D','D','D','D','D','D','H','H'],
-   9: ['H','D','D','D','D','H','H','H','H','H'],
-   8: ['H','H','H','H','H','H','H','H','H','H'],
+  17:['S','S','S','S','S','S','S','S','S','S'], 16:['S','S','S','S','S','H','H','H','H','H'],
+  15:['S','S','S','S','S','H','H','H','H','H'], 14:['S','S','S','S','S','H','H','H','H','H'],
+  13:['S','S','S','S','S','H','H','H','H','H'], 12:['H','H','S','S','S','H','H','H','H','H'],
+  11:['D','D','D','D','D','D','D','D','D','D'], 10:['D','D','D','D','D','D','D','D','H','H'],
+   9:['H','D','D','D','D','H','H','H','H','H'],  8:['H','H','H','H','H','H','H','H','H','H'],
 };
-const SURRENDER_H17 = new Map([[17,[9]], [16,[7,8,9]], [15,[8,9]]]);
-const SURRENDER_S17 = new Map([[16,[7,8,9]], [15,[8]]]);
+const SURRENDER_H17 = new Map([[17,[9]],[16,[7,8,9]],[15,[8,9]]]);
+const SURRENDER_S17 = new Map([[16,[7,8,9]],[15,[8]]]);
 
 // ─── STRATEGY ENGINE ─────────────────────────────────────────────────────────
 
 function isDoubleAvailable(hand) {
-  if (hand.cards.length !== 2) return false;
-  const { total } = handTotal(hand.cards);
+  if (hand.cards.length!==2) return false;
+  const {total}=handTotal(hand.cards);
   if (!CONFIG.doubleAnyTwo && ![9,10,11].includes(total)) return false;
   if (hand.fromSplit && !CONFIG.das) return false;
   return true;
 }
 function isSplitAvailable(hand) {
-  return hand.cards.length === 2
-    && state.splitCount < CONFIG.resplitMax
-    && hand.cards[0].rank === hand.cards[1].rank;
+  return hand.cards.length===2 && state.splitCount<CONFIG.resplitMax
+    && hand.cards[0].rank===hand.cards[1].rank;
 }
 function shouldSurrender(total, soft, uIdx) {
-  if (CONFIG.surrender !== 'late' || soft) return false;
-  const m = CONFIG.h17 ? SURRENDER_H17 : SURRENDER_S17;
-  return m.get(total)?.includes(uIdx) ?? false;
+  if (CONFIG.surrender!=='late'||soft) return false;
+  return (CONFIG.h17 ? SURRENDER_H17 : SURRENDER_S17).get(total)?.includes(uIdx) ?? false;
 }
 function getPairAction(rank, uIdx) {
   const raw = PAIRS[pairKey(rank)]?.[uIdx] ?? 'N';
-  if (raw === 'YN') return CONFIG.das ? 'Y' : 'N';
-  return raw;
+  return raw==='YN' ? (CONFIG.das ? 'Y' : 'N') : raw;
 }
 function getSoftAction(total, uIdx) { return (CONFIG.h17 ? SOFT_H17 : SOFT_S17)[total]?.[uIdx] ?? 'H'; }
 function getHardAction(total, uIdx) {
-  if (total >= 17) return 'S';
-  if (total <= 8)  return 'H';
-  return HARD[total]?.[uIdx] ?? 'H';
+  if (total>=17) return 'S'; if (total<=8) return 'H'; return HARD[total]?.[uIdx] ?? 'H';
 }
-
 function recommendedButton(hand, dealerCard) {
-  const uIdx = upcardIdx(dealerCard);
-  const { total, soft } = handTotal(hand.cards);
-  const isFirst = hand.cards.length === 2;
-  const isPair  = isFirst && hand.cards[0].rank === hand.cards[1].rank;
-  const canDbl  = isDoubleAvailable(hand);
-  const canSpl  = isSplitAvailable(hand);
-  const canSur  = CONFIG.surrender === 'late' && isFirst && !hand.fromSplit;
-
-  if (canSur && shouldSurrender(total, soft, uIdx)) return 'surrender';
-  if (isPair && canSpl && getPairAction(hand.cards[0].rank, uIdx) === 'Y') return 'split';
-
-  let raw = (soft && total >= 13) ? getSoftAction(total, uIdx) : getHardAction(total, uIdx);
-  if (raw === 'D')  return canDbl ? 'double' : 'hit';
-  if (raw === 'Ds') return canDbl ? 'double' : 'stand';
-  return raw === 'H' ? 'hit' : 'stand';
+  const uIdx=upcardIdx(dealerCard); const {total,soft}=handTotal(hand.cards);
+  const isFirst=hand.cards.length===2; const isPair=isFirst&&hand.cards[0].rank===hand.cards[1].rank;
+  const canDbl=isDoubleAvailable(hand); const canSpl=isSplitAvailable(hand);
+  const canSur=CONFIG.surrender==='late'&&isFirst&&!hand.fromSplit;
+  if (canSur && shouldSurrender(total,soft,uIdx)) return 'surrender';
+  if (isPair && canSpl && getPairAction(hand.cards[0].rank,uIdx)==='Y') return 'split';
+  let raw = (soft&&total>=13) ? getSoftAction(total,uIdx) : getHardAction(total,uIdx);
+  if (raw==='D')  return canDbl ? 'double' : 'hit';
+  if (raw==='Ds') return canDbl ? 'double' : 'stand';
+  return raw==='H' ? 'hit' : 'stand';
 }
-
 function actionReason(button, hand, dealerCard) {
-  const { total, soft } = handTotal(hand.cards);
-  const dRank = dealerCard.rank;
-  const dVal  = ['10','J','Q','K'].includes(dRank) ? 10 : dRank === 'A' ? 11 : parseInt(dRank,10);
-  const hDesc = soft ? `soft ${total}` : `hard ${total}`;
-  const pRank = hand.cards[0]?.rank;
-  switch (button) {
+  const {total,soft}=handTotal(hand.cards);
+  const dRank=dealerCard.rank;
+  const dVal=['10','J','Q','K'].includes(dRank)?10:dRank==='A'?11:parseInt(dRank,10);
+  const hDesc=soft?`soft ${total}`:`hard ${total}`;
+  const pRank=hand.cards[0]?.rank;
+  switch(button) {
     case 'surrender': return `Surrender ${hDesc} vs ${dRank} — cuts losses; negative EV hand`;
     case 'split':
-      if (pRank === 'A') return `Split aces — always; two aces beat a soft 12`;
-      if (pRank === '8') return `Split 8s — always; eliminate the worst hand (hard 16)`;
-      if (pRank === '9') return `Split 9s vs ${dRank} — two 9s beat a potential 18`;
+      if(pRank==='A') return `Split aces — always; two aces beat a soft 12`;
+      if(pRank==='8') return `Split 8s — always; eliminate the worst hand (hard 16)`;
+      if(pRank==='9') return `Split 9s vs ${dRank} — two 9s beat a potential 18`;
       return `Split ${pRank}s vs ${dRank} — basic strategy`;
     case 'double': return `Double ${hDesc} vs ${dRank} — prime spot; bet more to maximise profit`;
     case 'hit':
-      if (soft)          return `Hit soft ${total} — you can't bust; draw for improvement`;
-      if (total <= 11)   return `Hit ${total} — impossible to bust, always draw`;
-      if (dVal >= 7)     return `Hit ${hDesc} vs ${dRank} — dealer's strong card; you must improve`;
-      return             `Hit ${hDesc} vs ${dRank} — basic strategy says draw here`;
+      if(soft) return `Hit soft ${total} — you can't bust; draw for improvement`;
+      if(total<=11) return `Hit ${total} — impossible to bust, always draw`;
+      if(dVal>=7) return `Hit ${hDesc} vs ${dRank} — dealer's strong card; you must improve`;
+      return `Hit ${hDesc} vs ${dRank} — basic strategy says draw here`;
     case 'stand':
-      if (dVal <= 6)     return `Stand ${hDesc} vs ${dRank} — dealer's bust card; let them bust`;
-      return             `Stand ${hDesc} vs ${dRank} — too risky to draw`;
-    default:             return `Basic strategy: ${button}`;
+      if(dVal<=6) return `Stand ${hDesc} vs ${dRank} — dealer's bust card; let them bust`;
+      return `Stand ${hDesc} vs ${dRank} — too risky to draw`;
+    default: return `Basic strategy: ${button}`;
   }
+}
+function strategyCategory(hand, dealerCard) {
+  const uIdx=upcardIdx(dealerCard); const {total,soft}=handTotal(hand.cards);
+  const isFirst=hand.cards.length===2;
+  const isPair=isFirst&&hand.cards[0].rank===hand.cards[1].rank;
+  const canSur=CONFIG.surrender==='late'&&isFirst&&!hand.fromSplit;
+  if (canSur && shouldSurrender(total,soft,uIdx)) return 'surrender';
+  if (isPair) return 'pairs';
+  if (soft && total>=13) return 'soft';
+  return 'hard';
 }
 
 // ─── CHIP / BET SYSTEM ───────────────────────────────────────────────────────
 
-const CHIP_DENOMS = [100, 25, 5, 1];
-const CHIP_COLORS = { 100:'#1a3ab0', 25:'#1a7a1a', 5:'#b02020', 1:'#666666' };
-
+const CHIP_DENOMS = [100,25,5,1];
+const CHIP_COLORS = {100:'#1a3ab0',25:'#1a7a1a',5:'#b02020',1:'#666666'};
 function decomposeChips(amount) {
-  const chips = [];
-  let rem = amount;
-  for (const d of CHIP_DENOMS) {
-    const n = Math.floor(rem / d);
-    for (let i = 0; i < n; i++) chips.push(d);
-    rem -= n * d;
-  }
+  const chips=[]; let rem=amount;
+  for (const d of CHIP_DENOMS) { const n=Math.floor(rem/d); for(let i=0;i<n;i++) chips.push(d); rem-=n*d; }
   return chips;
 }
-
 function addChip(amount) {
-  const newBet = state.pendingBet + amount;
-  if (newBet > state.bankroll) {
-    setMsg(`Can't bet more than your bankroll (${state.bankroll}).`);
-    return;
-  }
-  state.pendingBet = newBet;
-  state.messageWrong = false;
+  const nb=state.pendingBet+amount;
+  if (nb>state.bankroll) { setMsg(`Can't bet more than bankroll (${state.bankroll}).`); return; }
+  state.pendingBet=nb; state.messageWrong=false;
   if (state.hintsEnabled) {
-    const s = suggestedBet();
-    const tc = count.trueCount();
-    setMsg(`Bet: ${state.pendingBet}  |  Suggested: ${s} (TC ${tc >= 0 ? '+' : ''}${tc.toFixed(1)})`);
-  } else {
-    setMsg(`Bet: ${state.pendingBet}`);
-  }
+    const s=suggestedBet(), tc=count.trueCount();
+    setMsg(`Bet: ${state.pendingBet}  |  Suggested: ${s} (TC ${tc>=0?'+':''}${tc.toFixed(1)})`);
+  } else { setMsg(`Bet: ${state.pendingBet}`); }
 }
-
-function clearBet() {
-  state.pendingBet = 0;
-  setMsg('Bet cleared.');
-}
-
+function clearBet() { state.pendingBet=0; setMsg('Bet cleared.'); }
 function suggestedBet() {
-  const tc = count.trueCount();
-  const units = Math.max(1, tc - 1);
-  const raw   = CONFIG.betUnit * units;
-  const snapped = Math.round(raw / CONFIG.betUnit) * CONFIG.betUnit;
-  return Math.max(CONFIG.betUnit, Math.min(state.bankroll, snapped));
+  const tc=count.trueCount(); const raw=CONFIG.betUnit*Math.max(1,tc-1);
+  return Math.max(CONFIG.betUnit, Math.min(state.bankroll, Math.round(raw/CONFIG.betUnit)*CONFIG.betUnit));
 }
-
-// Called right before cards are dealt — logs a note if bet deviates notably
 function checkBetCoach() {
   if (!state.hintsEnabled) return;
-  const suggested = suggestedBet();
-  const actual    = state.pendingBet;
-  const tc        = count.trueCount();
-  const tcStr     = (tc >= 0 ? '+' : '') + tc.toFixed(1);
+  const s=suggestedBet(), actual=state.pendingBet, tc=count.trueCount();
+  const tcs=(tc>=0?'+':'')+tc.toFixed(1);
+  if (tc>=2 && actual<s*0.6) state.betCoachNote=`Bet coach: TC ${tcs} is hot — suggested bet is ${s}`;
+  else if (tc<=0 && actual>CONFIG.betUnit && actual>s*1.8) state.betCoachNote=`Bet coach: TC ${tcs} is cold — consider cutting back to ${s}`;
+  else state.betCoachNote=null;
+}
 
-  if (tc >= 2 && actual < suggested * 0.6) {
-    // Player is underbetting a hot shoe
-    state.betCoachNote = `Bet coach: TC ${tcStr} is hot — suggested bet is ${suggested}`;
-  } else if (tc <= 0 && actual > CONFIG.betUnit && actual > suggested * 1.8) {
-    // Player is overbetting a cold shoe
-    state.betCoachNote = `Bet coach: TC ${tcStr} is cold — consider cutting back to ${suggested}`;
-  } else {
-    state.betCoachNote = null;
+// ─── STATS ───────────────────────────────────────────────────────────────────
+
+const LS_KEY = 'bj_alltime_v1';
+
+function makeScope(bankrollStart) {
+  return {
+    hands: 0, wins: 0, losses: 0, pushes: 0, blackjacks: 0, surrenders: 0,
+    bankrollStart,
+    bankrollHistory: [bankrollStart],
+    strategy: {
+      correct: 0, incorrect: 0,
+      byCategory: {
+        hard:      { correct:0, incorrect:0 },
+        soft:      { correct:0, incorrect:0 },
+        pairs:     { correct:0, incorrect:0 },
+        surrender: { correct:0, incorrect:0 },
+      },
+    },
+    countGuess: { attempts: 0, correct: 0 },
+  };
+}
+
+function saveAllTime() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(stats.allTime)); } catch(e) {}
+}
+function loadAllTime(bankrollStart) {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Ensure structure is complete (backward compat)
+      const fresh = makeScope(bankrollStart);
+      return Object.assign(fresh, parsed);
+    }
+  } catch(e) {}
+  return makeScope(bankrollStart);
+}
+
+// Initialised after CONFIG/state are declared — forward reference resolved below.
+let stats;
+
+function recordRound() {
+  stats.session.hands++;
+  stats.allTime.hands++;
+  for (const h of state.hands) {
+    const r = h.result;
+    for (const sc of ['session','allTime']) {
+      const s = stats[sc];
+      if (r==='win')       { s.wins++; }
+      if (r==='bj')        { s.wins++; s.blackjacks++; }
+      if (r==='lose')      { s.losses++; }
+      if (r==='push')      { s.pushes++; }
+      if (r==='surrender') { s.surrenders++; }
+    }
   }
+  for (const sc of ['session','allTime']) {
+    const hist = stats[sc].bankrollHistory;
+    hist.push(state.bankroll);
+    if (hist.length > 400) stats[sc].bankrollHistory = hist.slice(-400);
+  }
+  saveAllTime();
+  if (state.statsPanelOpen) renderStats();
+}
+
+// Stats display helpers
+function pct(n, total) { return total===0 ? '—' : `${n} (${Math.round(n/total*100)}%)`; }
+function stratPct(st) {
+  const tot=st.strategy.correct+st.strategy.incorrect;
+  return tot===0 ? '—' : `${st.strategy.correct}/${tot} (${Math.round(st.strategy.correct/tot*100)}%)`;
+}
+function catPct(st, cat) {
+  const c=st.strategy.byCategory[cat]; const tot=c.correct+c.incorrect;
+  return tot===0 ? '—' : `${Math.round(c.correct/tot*100)}%  (${c.correct+c.incorrect})`;
+}
+function guessPct(st) {
+  const g=st.countGuess;
+  return g.attempts===0 ? '—' : `${g.correct}/${g.attempts} (${Math.round(g.correct/g.attempts*100)}%)`;
+}
+function deltaStr(st) {
+  const hist=st.bankrollHistory;
+  if (hist.length<2) return '—';
+  const d=hist[hist.length-1]-hist[0];
+  return (d>=0?'+':'')+d;
+}
+
+function renderStats() {
+  for (const [scope, tblId] of [['session','tbl-session'],['allTime','tbl-alltime']]) {
+    const st = stats[scope];
+    const tbl = document.getElementById(tblId);
+    if (!tbl) continue;
+    const h = st.hands;
+    const rows = [
+      ['Hands', h],
+      ['Wins',   pct(st.wins,   h)],
+      ['Losses', pct(st.losses, h)],
+      ['Pushes', pct(st.pushes, h)],
+      ['BJ',     pct(st.blackjacks, h)],
+      ['P&L',    deltaStr(st)],
+      ['sep'],
+      ['Strategy', stratPct(st)],
+      ['  Hard',     catPct(st,'hard'),     true],
+      ['  Soft',     catPct(st,'soft'),     true],
+      ['  Pairs',    catPct(st,'pairs'),    true],
+      ['  Surrender',catPct(st,'surrender'),true],
+      ['sep'],
+      ['RC guesses', guessPct(st)],
+    ];
+    tbl.innerHTML = rows.map(([k,v,isCat]) => {
+      if (k==='sep') return '<tr><td colspan="2" class="sep"></td></tr>';
+      return `<tr${isCat?' class="cat-row"':''}><td class="sk">${k}</td><td class="sv">${v}</td></tr>`;
+    }).join('');
+  }
+  drawSparkline();
+}
+
+function drawSparkline() {
+  const sc = document.getElementById('sparkline');
+  if (!sc) return;
+  const sctx = sc.getContext('2d');
+  const W=sc.width, H=sc.height, pad=6;
+  const data = stats.session.bankrollHistory;
+  sctx.fillStyle='#0a180a'; sctx.fillRect(0,0,W,H);
+
+  if (data.length < 2) {
+    sctx.fillStyle='#446644'; sctx.font='8px monospace';
+    sctx.fillText('Play hands to see bankroll history', pad, H/2+4); return;
+  }
+  const mn=Math.min(...data), mx=Math.max(...data), rng=mx-mn||1;
+  const xS=(W-pad*2)/(data.length-1), yS=(H-pad*2)/rng;
+
+  // Start bankroll reference line
+  const refY = H-pad-(data[0]-mn)*yS;
+  sctx.strokeStyle='#2a4a2a'; sctx.setLineDash([2,3]); sctx.lineWidth=0.5;
+  sctx.beginPath(); sctx.moveTo(pad,refY); sctx.lineTo(W-pad,refY); sctx.stroke();
+  sctx.setLineDash([]);
+
+  // Line
+  const last=data[data.length-1];
+  sctx.strokeStyle=last>=data[0]?'#60c060':'#c06060'; sctx.lineWidth=1;
+  sctx.beginPath();
+  data.forEach((v,i)=>{
+    const x=pad+i*xS, y=H-pad-(v-mn)*yS;
+    i===0 ? sctx.moveTo(x,y) : sctx.lineTo(x,y);
+  });
+  sctx.stroke();
+
+  sctx.fillStyle='#88aa88'; sctx.font='8px monospace';
+  sctx.fillText(mx, pad, pad+8); sctx.fillText(mn, pad, H-2);
+  sctx.fillStyle=last>=data[0]?'#60c060':'#c06060';
+  sctx.fillText(last, W-pad-String(last).length*6, pad+8);
+}
+
+function newSession() {
+  stats.session = makeScope(state.bankroll);
+  if (state.statsPanelOpen) renderStats();
+  setMsg('New session started.'); syncMsg();
+}
+
+function resetAll() {
+  if (!confirm('Reset ALL stats (session + all-time)? This cannot be undone.')) return;
+  stats.session = makeScope(state.bankroll);
+  stats.allTime  = makeScope(state.bankroll);
+  saveAllTime();
+  if (state.statsPanelOpen) renderStats();
+  setMsg('All stats reset.'); syncMsg();
+}
+
+function exportStats() {
+  const data = { exported: new Date().toISOString(), session: stats.session, allTime: stats.allTime };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`bj-stats-${new Date().toISOString().slice(0,10)}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importStats(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.allTime) {
+        const fresh = makeScope(state.bankroll);
+        stats.allTime = Object.assign(fresh, data.allTime);
+        saveAllTime();
+        if (state.statsPanelOpen) renderStats();
+        setMsg('Stats imported.'); syncMsg();
+      } else { setMsg('Import failed: no allTime data.'); syncMsg(); }
+    } catch(e) { setMsg('Import failed: invalid JSON.'); syncMsg(); }
+  };
+  reader.readAsText(file);
 }
 
 // ─── GAME STATE ───────────────────────────────────────────────────────────────
 
 const CONFIG = {
-  numDecks: 6,
-  penetration: 0.75,
-  h17: true,
-  bjPayout: 1.5,
-  surrender: 'late',
-  das: true,
-  resplitMax: 3,
-  splitAcesOneCard: true,
-  doubleAnyTwo: true,
-  betUnit: 10,
+  numDecks: 6, penetration: 0.75, h17: true, bjPayout: 1.5,
+  surrender: 'late', das: true, resplitMax: 3, splitAcesOneCard: true,
+  doubleAnyTwo: true, betUnit: 10,
 };
 
 const PHASE = { IDLE:'idle', PLAYER:'player', INSURANCE:'insurance', DEALER:'dealer', DONE:'done' };
 
-let shoe  = new Shoe(CONFIG.numDecks);
+let shoe = new Shoe(CONFIG.numDecks);
 let state = {
-  phase: PHASE.IDLE,
-  hands: [], activeHandIdx: 0,
-  dealerCards: [],
-  bet: 0,               // bet for the current/last hand
-  pendingBet: 10,       // chips stacked pre-deal; defaults to 1 unit
-  bankroll: 1000,
-  insuranceBet: 0,
-  splitCount: 0,
-  message: '',
-  messageWrong: false,
-  betCoachNote: null,
-  countOverlayVisible: false,
+  phase: PHASE.IDLE, hands: [], activeHandIdx: 0, dealerCards: [],
+  bet: 0, pendingBet: 10, bankroll: 1000,
+  insuranceBet: 0, splitCount: 0,
+  message: '', messageWrong: false, betCoachNote: null,
+  countOverlayVisible: false, waitingForCountGuess: false,
   hintsEnabled: false,
+  statsPanelOpen: false,
   currentRec: null,
-  strategyStats: {
-    session: { correct: 0, incorrect: 0 },
-    allTime:  { correct: 0, incorrect: 0 },
-  },
 };
 
-function makeHand(cards = [], bet = 0) {
+// Initialise stats after state.bankroll is available
+stats = { session: makeScope(state.bankroll), allTime: loadAllTime(state.bankroll) };
+
+function makeHand(cards=[], bet=0) {
   return { cards, bet, doubled:false, surrendered:false, fromSplit:false, done:false, result:null, payout:0 };
 }
 
 // ─── DECISION TRACKING ────────────────────────────────────────────────────────
 
 function checkDecision(playerButton) {
-  const rec = state.currentRec;
-  state.currentRec = null;
+  const rec = state.currentRec; state.currentRec = null;
   if (!rec) return;
   const correct = playerButton === rec.button;
-  state.strategyStats.session[correct ? 'correct' : 'incorrect']++;
-  state.strategyStats.allTime [correct ? 'correct' : 'incorrect']++;
+  const cat = rec.category;
+  for (const sc of ['session','allTime']) {
+    const s = stats[sc].strategy;
+    s[correct?'correct':'incorrect']++;
+    if (cat && s.byCategory[cat]) s.byCategory[cat][correct?'correct':'incorrect']++;
+  }
   if (!correct && state.hintsEnabled) {
-    state.message      = `✗ Wrong — ${rec.reason}`;
-    state.messageWrong = true;
+    state.message = `✗ Wrong — ${rec.reason}`; state.messageWrong = true;
   }
 }
 
 function computeRec() {
-  if (state.phase !== PHASE.PLAYER || !state.dealerCards.length) { state.currentRec = null; return; }
+  if (state.phase!==PHASE.PLAYER || !state.dealerCards.length) { state.currentRec=null; return; }
   const hand = activeHand();
-  if (!hand || hand.done) { state.currentRec = null; return; }
-  const up     = state.dealerCards[0];
-  const button = recommendedButton(hand, up);
-  const reason = actionReason(button, hand, up);
-  state.currentRec = { button, reason };
+  if (!hand || hand.done) { state.currentRec=null; return; }
+  const up = state.dealerCards[0];
+  state.currentRec = {
+    button:   recommendedButton(hand, up),
+    reason:   actionReason(recommendedButton(hand, up), hand, up),
+    category: strategyCategory(hand, up),
+  };
+  // Reuse button result
+  state.currentRec.reason = actionReason(state.currentRec.button, hand, up);
+}
+
+// ─── COUNT GUESS FLOW ─────────────────────────────────────────────────────────
+
+function showCountGuessPanel() {
+  state.waitingForCountGuess = true;
+  document.getElementById('count-guess-panel').classList.add('visible');
+  setTimeout(() => document.getElementById('rc-guess-input').focus(), 50);
+}
+function hideCountGuessPanel() {
+  state.waitingForCountGuess = false;
+  document.getElementById('count-guess-panel').classList.remove('visible');
+  document.getElementById('rc-guess-input').value = '';
+}
+function submitCountGuess(skip=false) {
+  if (!skip) {
+    const val = document.getElementById('rc-guess-input').value.trim();
+    if (val !== '') {
+      const guess = parseInt(val, 10);
+      if (!isNaN(guess)) {
+        const actual = count.running; const off = Math.abs(guess-actual);
+        const correct = off===0;
+        for (const sc of ['session','allTime']) {
+          stats[sc].countGuess.attempts++;
+          if (correct) stats[sc].countGuess.correct++;
+        }
+        saveAllTime();
+        const s = actual>=0?'+':'';
+        setMsg(correct
+          ? `RC correct! Running count is ${s}${actual}`
+          : `Off by ${off}: RC = ${s}${actual} (guessed ${guess>=0?'+':''}${guess})`);
+        syncMsg();
+      }
+    }
+  }
+  hideCountGuessPanel();
+  state.countOverlayVisible = true;
+  render(); updateButtons();
 }
 
 // ─── GAME ACTIONS ─────────────────────────────────────────────────────────────
 
 function deal() {
-  if (state.pendingBet <= 0) { setMsg('Place a bet first.'); return; }
-  if (state.pendingBet > state.bankroll) { setMsg(`Bet exceeds bankroll (${state.bankroll}).`); return; }
-
-  // Capture bet-coach note before cards change the count
+  if (state.pendingBet<=0) { setMsg('Place a bet first.'); return; }
+  if (state.pendingBet>state.bankroll) { setMsg(`Bet exceeds bankroll (${state.bankroll}).`); return; }
   checkBetCoach();
-
-  if (shoe.needsShuffle(CONFIG.penetration)) {
-    shoe.build();
-    count.reset();
-  }
-
-  state.bet          = state.pendingBet;
-  state.messageWrong = false;
-  state.betCoachNote = state.betCoachNote; // already set above
-
-  const p1 = shoe.deal(), p2 = shoe.deal();
-  const d1 = shoe.deal(), d2 = shoe.deal(false);
+  if (shoe.needsShuffle(CONFIG.penetration)) { shoe.build(); count.reset(); }
+  state.bet=state.pendingBet; state.messageWrong=false;
+  const p1=shoe.deal(), p2=shoe.deal(), d1=shoe.deal(), d2=shoe.deal(false);
   count.countCard(p1); count.countCard(p2); count.countCard(d1);
-
-  const hand = makeHand([p1, p2], state.bet);
-  state.hands         = [hand];
-  state.activeHandIdx = 0;
-  state.dealerCards   = [d1, d2];
-  state.insuranceBet  = 0;
-  state.splitCount    = 0;
-  state.currentRec    = null;
-  state.phase         = PHASE.PLAYER;
+  const hand=makeHand([p1,p2],state.bet);
+  state.hands=[hand]; state.activeHandIdx=0;
+  state.dealerCards=[d1,d2]; state.insuranceBet=0; state.splitCount=0; state.currentRec=null;
+  state.phase=PHASE.PLAYER;
   setMsg(state.betCoachNote ?? 'Your turn.');
-
-  if (d1.rank === 'A') { state.phase = PHASE.INSURANCE; setMsg('Dealer shows Ace. Insurance?'); return; }
+  if (d1.rank==='A') { state.phase=PHASE.INSURANCE; setMsg('Dealer shows Ace. Insurance?'); return; }
   checkImmediateBlackjack();
 }
 
 function revealHole() {
-  const h = state.dealerCards[1];
-  if (!h.faceUp) { h.faceUp = true; count.countCard(h); }
+  const h=state.dealerCards[1]; if(!h.faceUp) { h.faceUp=true; count.countCard(h); }
 }
-
 function checkImmediateBlackjack() {
-  const hand = state.hands[0];
+  const hand=state.hands[0];
   if (isBlackjack(hand.cards)) {
     revealHole();
-    if (isBlackjack(state.dealerCards)) { settleHand(hand,'push');  setMsg('Push — both blackjack.'); }
-    else                                { settleHand(hand,'bj');    setMsg('Blackjack! You win.'); }
-    state.phase = PHASE.DONE;
-    finishRound(); return;
+    if (isBlackjack(state.dealerCards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); }
+    else                                { settleHand(hand,'bj');   setMsg('Blackjack! You win.'); }
+    state.phase=PHASE.DONE; finishRound(); return;
   }
-  state.phase = PHASE.PLAYER;
+  state.phase=PHASE.PLAYER;
   if (!state.messageWrong && !state.betCoachNote) setMsg('Your turn.');
 }
-
-function takeInsurance()   { state.insuranceBet = Math.floor(state.bet/2); state.phase = PHASE.PLAYER; setMsg('Insurance taken.'); checkImmediateBlackjack(); }
-function declineInsurance(){ state.insuranceBet = 0;                       state.phase = PHASE.PLAYER; setMsg('No insurance.');     checkImmediateBlackjack(); }
-
+function takeInsurance()   { state.insuranceBet=Math.floor(state.bet/2); state.phase=PHASE.PLAYER; setMsg('Insurance taken.'); checkImmediateBlackjack(); }
+function declineInsurance(){ state.insuranceBet=0; state.phase=PHASE.PLAYER; setMsg('No insurance.'); checkImmediateBlackjack(); }
 function activeHand() { return state.hands[state.activeHandIdx]; }
 
 function hit() {
   checkDecision('hit');
-  const hand = activeHand(), card = shoe.deal();
-  count.countCard(card); hand.cards.push(card);
-  if (isBust(hand.cards)) {
-    if (!state.messageWrong) setMsg('Bust!');
-    hand.done = true; advanceHand();
-  } else if (handTotal(hand.cards).total === 21) {
-    stand();
-  } else {
-    if (!state.messageWrong) setMsg('Hit. Total: ' + handTotal(hand.cards).total);
-  }
+  const hand=activeHand(), card=shoe.deal(); count.countCard(card); hand.cards.push(card);
+  if (isBust(hand.cards)) { if(!state.messageWrong) setMsg('Bust!'); hand.done=true; advanceHand(); }
+  else if (handTotal(hand.cards).total===21) { stand(); }
+  else { if(!state.messageWrong) setMsg('Hit. Total: '+handTotal(hand.cards).total); }
 }
-
-function stand() {
-  checkDecision('stand');
-  activeHand().done = true; advanceHand();
-}
-
+function stand() { checkDecision('stand'); activeHand().done=true; advanceHand(); }
 function doubleDown() {
   checkDecision('double');
-  const hand = activeHand(), card = shoe.deal();
-  count.countCard(card); hand.cards.push(card);
-  hand.bet *= 2; hand.doubled = true; hand.done = true;
-  if (!state.messageWrong) setMsg(isBust(hand.cards) ? 'Double — Bust!' : 'Double. Total: ' + handTotal(hand.cards).total);
+  const hand=activeHand(), card=shoe.deal(); count.countCard(card); hand.cards.push(card);
+  hand.bet*=2; hand.doubled=true; hand.done=true;
+  if(!state.messageWrong) setMsg(isBust(hand.cards)?'Double — Bust!':'Double. Total: '+handTotal(hand.cards).total);
   advanceHand();
 }
-
 function split() {
   checkDecision('split');
-  const hand = activeHand(), c1 = hand.cards[0], c2 = hand.cards[1];
-  const nc1 = shoe.deal(), nc2 = shoe.deal();
+  const hand=activeHand(), c1=hand.cards[0], c2=hand.cards[1];
+  const nc1=shoe.deal(), nc2=shoe.deal();
   count.countCard(nc1); count.countCard(nc2);
-  const h1 = makeHand([c1,nc1], hand.bet), h2 = makeHand([c2,nc2], hand.bet);
-  h1.fromSplit = h2.fromSplit = true;
-  state.splitCount++;
-  state.hands.splice(state.activeHandIdx, 1, h1, h2);
-  if (c1.rank === 'A' && CONFIG.splitAcesOneCard) { h1.done = h2.done = true; advanceHand(); return; }
-  if (!state.messageWrong) setMsg('Split. Play left hand.');
+  const h1=makeHand([c1,nc1],hand.bet), h2=makeHand([c2,nc2],hand.bet);
+  h1.fromSplit=h2.fromSplit=true; state.splitCount++;
+  state.hands.splice(state.activeHandIdx,1,h1,h2);
+  if (c1.rank==='A'&&CONFIG.splitAcesOneCard) { h1.done=h2.done=true; advanceHand(); return; }
+  if(!state.messageWrong) setMsg('Split. Play left hand.');
 }
-
 function surrender() {
   checkDecision('surrender');
-  const hand = activeHand();
-  hand.surrendered = hand.done = true;
-  if (!state.messageWrong) setMsg('Surrender — half bet returned.');
+  const hand=activeHand(); hand.surrendered=hand.done=true;
+  if(!state.messageWrong) setMsg('Surrender — half bet returned.');
   advanceHand();
 }
-
 function advanceHand() {
-  let next = state.activeHandIdx + 1;
-  while (next < state.hands.length && state.hands[next].done) next++;
-  if (next < state.hands.length) {
-    state.activeHandIdx = next;
-    state.messageWrong  = false;
-    setMsg('Play next hand. Total: ' + handTotal(activeHand().cards).total);
-  } else {
-    dealerPlay();
-  }
+  let next=state.activeHandIdx+1;
+  while (next<state.hands.length && state.hands[next].done) next++;
+  if (next<state.hands.length) {
+    state.activeHandIdx=next; state.messageWrong=false;
+    setMsg('Play next hand. Total: '+handTotal(activeHand().cards).total);
+  } else { dealerPlay(); }
 }
-
 function dealerPlay() {
-  state.phase = PHASE.DEALER; revealHole();
-  const needsPlay = state.hands.some(h => !h.surrendered && !isBust(h.cards));
+  state.phase=PHASE.DEALER; revealHole();
+  const needsPlay=state.hands.some(h=>!h.surrendered&&!isBust(h.cards));
   if (needsPlay) {
-    while (true) {
-      const { total, soft } = handTotal(state.dealerCards);
-      if (!(total < 17 || (CONFIG.h17 && soft && total === 17))) break;
-      const card = shoe.deal(); count.countCard(card); state.dealerCards.push(card);
+    while(true) {
+      const {total,soft}=handTotal(state.dealerCards);
+      if(!(total<17||(CONFIG.h17&&soft&&total===17))) break;
+      const card=shoe.deal(); count.countCard(card); state.dealerCards.push(card);
     }
   }
   settleAll();
 }
-
 function settleAll() {
-  const { total: dTotal } = handTotal(state.dealerCards);
-  const dealerBust = isBust(state.dealerCards);
-  const dealerBJ   = isBlackjack(state.dealerCards);
-  if (state.insuranceBet > 0 && dealerBJ) state.bankroll += state.insuranceBet * 2;
-
+  const {total:dTotal}=handTotal(state.dealerCards);
+  const dBust=isBust(state.dealerCards), dBJ=isBlackjack(state.dealerCards);
+  if (state.insuranceBet>0&&dBJ) state.bankroll+=state.insuranceBet*2;
   for (const hand of state.hands) {
-    if (hand.surrendered)    { settleHand(hand,'surrender'); continue; }
-    if (isBust(hand.cards))  { settleHand(hand,'lose');      continue; }
-    if (dealerBust)           { settleHand(hand,'win');       continue; }
-    const { total: pTotal } = handTotal(hand.cards);
-    if      (pTotal > dTotal) settleHand(hand,'win');
-    else if (pTotal < dTotal) settleHand(hand,'lose');
-    else                      settleHand(hand,'push');
+    if (hand.surrendered)   { settleHand(hand,'surrender'); continue; }
+    if (isBust(hand.cards)) { settleHand(hand,'lose');      continue; }
+    if (dBust)               { settleHand(hand,'win');       continue; }
+    const {total:pT}=handTotal(hand.cards);
+    if(pT>dTotal) settleHand(hand,'win'); else if(pT<dTotal) settleHand(hand,'lose'); else settleHand(hand,'push');
   }
-
-  state.phase        = PHASE.DONE;
-  state.messageWrong = false;
-  state.betCoachNote = null;
-  // Carry pendingBet over to next hand (convenient)
-  state.pendingBet   = state.bet;
-
-  const outcome = state.hands.map(h => {
-    if (h.result === 'win')       return `Win +${h.payout}`;
-    if (h.result === 'bj')        return `Blackjack +${h.payout}`;
-    if (h.result === 'lose')      return `Lose -${h.bet}`;
-    if (h.result === 'push')      return `Push`;
-    if (h.result === 'surrender') return `Surrender -${Math.abs(h.payout)}`;
+  state.phase=PHASE.DONE; state.messageWrong=false; state.betCoachNote=null;
+  state.pendingBet=state.bet;
+  recordRound();
+  const outcome=state.hands.map(h=>{
+    if(h.result==='win')       return `Win +${h.payout}`;
+    if(h.result==='bj')        return `Blackjack +${h.payout}`;
+    if(h.result==='lose')      return `Lose -${h.bet}`;
+    if(h.result==='push')      return `Push`;
+    if(h.result==='surrender') return `Surrender -${Math.abs(h.payout)}`;
     return '';
   }).join(' | ');
-  setMsg(outcome + ` | Bank: ${state.bankroll}`);
+  setMsg(outcome+` | Bank: ${state.bankroll}`);
   finishRound();
 }
-
 function settleHand(hand, result) {
-  hand.result = result;
-  if      (result === 'win')       { hand.payout = hand.bet;  state.bankroll += hand.bet; }
-  else if (result === 'bj')        { hand.payout = Math.floor(hand.bet * CONFIG.bjPayout); state.bankroll += hand.payout; }
-  else if (result === 'lose')      { hand.payout = -hand.bet; state.bankroll -= hand.bet; }
-  else if (result === 'push')      { hand.payout = 0; }
-  else if (result === 'surrender') { const l = Math.floor(hand.bet/2); hand.payout = -l; state.bankroll -= l; }
+  hand.result=result;
+  if(result==='win')       { hand.payout=hand.bet;  state.bankroll+=hand.bet; }
+  else if(result==='bj')   { hand.payout=Math.floor(hand.bet*CONFIG.bjPayout); state.bankroll+=hand.payout; }
+  else if(result==='lose') { hand.payout=-hand.bet; state.bankroll-=hand.bet; }
+  else if(result==='push') { hand.payout=0; }
+  else if(result==='surrender') { const l=Math.floor(hand.bet/2); hand.payout=-l; state.bankroll-=l; }
 }
-
-function finishRound() { state.phase = PHASE.DONE; render(); updateButtons(); }
-function setMsg(m, wrong = false) { state.message = m; state.messageWrong = wrong; }
+function finishRound() { state.phase=PHASE.DONE; render(); updateButtons(); }
+function setMsg(m,wrong=false) { state.message=m; state.messageWrong=wrong; }
 
 // ─── RENDERER ────────────────────────────────────────────────────────────────
 
-const canvas = document.getElementById('canvas');
-const ctx    = canvas.getContext('2d');
-const W = 320, H = 180;
-
+const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
+const W=320, H=180;
 function fillRect(x,y,w,h,col) { ctx.fillStyle=col; ctx.fillRect(x,y,w,h); }
 function text(str,x,y,col='#e0e0e0',sz=7) { ctx.fillStyle=col; ctx.font=`${sz}px monospace`; ctx.fillText(str,x,y); }
-
-function drawCard(card, x, y) {
-  const CW=22, CH=32;
-  if (!card.faceUp) { fillRect(x,y,CW,CH,'#1a3a7a'); fillRect(x+2,y+2,CW-4,CH-4,'#2a4a9a'); return; }
-  const isRed = card.suit==='♥'||card.suit==='♦';
+function drawCard(card,x,y) {
+  const CW=22,CH=32;
+  if(!card.faceUp) { fillRect(x,y,CW,CH,'#1a3a7a'); fillRect(x+2,y+2,CW-4,CH-4,'#2a4a9a'); return; }
+  const isRed=card.suit==='♥'||card.suit==='♦';
   fillRect(x,y,CW,CH,'#f0ead0');
   ctx.strokeStyle='#888'; ctx.lineWidth=0.5; ctx.strokeRect(x,y,CW,CH);
-  const col = isRed ? '#c03030' : '#202020';
-  text(card.rank, x+2, y+8,  col, 7);
-  text(card.suit, x+2, y+16, col, 7);
+  const col=isRed?'#c03030':'#202020';
+  text(card.rank,x+2,y+8,col,7); text(card.suit,x+2,y+16,col,7);
 }
-
-function drawHand(cards, label, x, y) {
-  text(label, x, y-2, '#a0c8a0', 6);
-  for (let i=0; i<cards.length; i++) drawCard(cards[i], x+i*26, y);
-  const vis = cards.filter(c=>c.faceUp);
-  if (vis.length>0) {
-    const {total,soft} = handTotal(vis);
-    text((soft&&total<21?'S':'')+total, x+cards.length*26+4, y+20, '#f0d080', 7);
-  }
+function drawHand(cards,label,x,y) {
+  text(label,x,y-2,'#a0c8a0',6);
+  for(let i=0;i<cards.length;i++) drawCard(cards[i],x+i*26,y);
+  const vis=cards.filter(c=>c.faceUp);
+  if(vis.length>0) { const{total,soft}=handTotal(vis); text((soft&&total<21?'S':'')+total,x+cards.length*26+4,y+20,'#f0d080',7); }
 }
-
 function drawBetArea() {
-  const betAmt = (state.phase===PHASE.IDLE||state.phase===PHASE.DONE) ? state.pendingBet : state.bet;
-  const locked = !(state.phase===PHASE.IDLE||state.phase===PHASE.DONE);
-  const bx=186, by=118, bw=128, bh=42;
-
-  fillRect(bx, by, bw, bh, 'rgba(0,15,8,0.75)');
-  ctx.strokeStyle = locked ? '#334433' : '#4a7a4a';
-  ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
-
-  text(locked?'BET (locked)':'BET', bx+4, by+10, locked?'#445544':'#88aa88', 6);
-
-  // Chip stack (up to 10 chips drawn as small circles)
-  const chips = decomposeChips(betAmt).slice(0, 10);
-  for (let i=0; i<chips.length; i++) {
-    const d = chips[i];
-    const cx = bx+9 + i*11, cy = by+23;
-    ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI*2);
-    ctx.fillStyle = CHIP_COLORS[d]; ctx.fill();
+  const betAmt=(state.phase===PHASE.IDLE||state.phase===PHASE.DONE)?state.pendingBet:state.bet;
+  const locked=!(state.phase===PHASE.IDLE||state.phase===PHASE.DONE);
+  const bx=186,by=118,bw=128,bh=42;
+  fillRect(bx,by,bw,bh,'rgba(0,15,8,0.75)');
+  ctx.strokeStyle=locked?'#334433':'#4a7a4a'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
+  text(locked?'BET (locked)':'BET',bx+4,by+10,locked?'#445544':'#88aa88',6);
+  const chips=decomposeChips(betAmt).slice(0,10);
+  for(let i=0;i<chips.length;i++) {
+    const d=chips[i], cx=bx+9+i*11, cy=by+23;
+    ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.fillStyle=CHIP_COLORS[d]; ctx.fill();
     ctx.strokeStyle='#ffffff44'; ctx.lineWidth=0.5; ctx.stroke();
-    // edge stripe
-    ctx.strokeStyle = locked ? CHIP_COLORS[d]+'88' : '#ffffff55';
-    ctx.lineWidth=0.5;
-    ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, Math.PI*2); ctx.stroke();
+    ctx.strokeStyle=locked?CHIP_COLORS[d]+'88':'#ffffff55'; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.arc(cx,cy,2.5,0,Math.PI*2); ctx.stroke();
   }
-  if (chips.length === 0) text('(no bet)', bx+4, by+26, '#446644', 6);
-
-  text(`${betAmt} units`, bx+4, by+38, locked?'#778877':'#f0d080', 7);
-
-  // Bet coach suggestion
-  if (state.hintsEnabled && !locked) {
-    const s = suggestedBet();
-    const tc = count.trueCount();
-    const tcs = (tc>=0?'+':'')+tc.toFixed(1);
-    text(`→ ${s} (TC ${tcs})`, bx+64, by+38, '#90c0e8', 6);
+  if(chips.length===0) text('(no bet)',bx+4,by+26,'#446644',6);
+  text(`${betAmt} units`,bx+4,by+38,locked?'#778877':'#f0d080',7);
+  if(state.hintsEnabled && !locked) {
+    const s=suggestedBet(), tc=count.trueCount();
+    text(`→ ${s} (TC ${(tc>=0?'+':'')+tc.toFixed(1)})`,bx+64,by+38,'#90c0e8',6);
   }
 }
-
 function drawCountOverlay() {
   const tc=count.trueCount(), rc=count.running;
-  const bg = tc<=-1?'rgba(20,40,90,0.88)': tc>=1?'rgba(80,50,10,0.88)':'rgba(20,30,20,0.88)';
-  const bx=W-90, by=4, bw=86, bh=30;
+  const bg=tc<=-1?'rgba(20,40,90,0.88)':tc>=1?'rgba(80,50,10,0.88)':'rgba(20,30,20,0.88)';
+  const bx=W-90,by=4,bw=86,bh=30;
   ctx.fillStyle=bg; ctx.fillRect(bx,by,bw,bh);
-  ctx.strokeStyle=tc>0?'#c8a040':tc<0?'#4a70b0':'#4a7a4a';
-  ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
+  ctx.strokeStyle=tc>0?'#c8a040':tc<0?'#4a70b0':'#4a7a4a'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
   const s1=rc>=0?'+':'', s2=tc>=0?'+':'';
-  text('RC  '+s1+rc,              bx+4,by+11,'#e0e0c0',7);
-  text('TC  '+s2+tc.toFixed(1),   bx+4,by+22,tc>0?'#f0c060':tc<0?'#80a8e0':'#a0c0a0',7);
+  text('RC  '+s1+rc,bx+4,by+11,'#e0e0c0',7);
+  text('TC  '+s2+tc.toFixed(1),bx+4,by+22,tc>0?'#f0c060':tc<0?'#80a8e0':'#a0c0a0',7);
 }
-
 function render() {
-  fillRect(0, 0, W, H, '#0d2b1a');
-
-  if (state.dealerCards.length > 0) {
-    const vis = state.dealerCards.filter(c=>c.faceUp);
-    const {total,soft} = handTotal(vis);
-    const dlbl = 'DEALER'+(state.dealerCards[1]?.faceUp?` (${soft&&total<21?'S':''}${total})`:'');
-    drawHand(state.dealerCards, dlbl, 10, 16);
+  fillRect(0,0,W,H,'#0d2b1a');
+  if (state.dealerCards.length>0) {
+    const vis=state.dealerCards.filter(c=>c.faceUp); const{total,soft}=handTotal(vis);
+    const dlbl='DEALER'+(state.dealerCards[1]?.faceUp?` (${soft&&total<21?'S':''}${total})`:'');
+    drawHand(state.dealerCards,dlbl,10,16);
   }
-
   let px=10;
-  for (let i=0; i<state.hands.length; i++) {
-    const h=state.hands[i];
-    const active = i===state.activeHandIdx && state.phase===PHASE.PLAYER;
-    let lbl = `${active?'>':' '}HAND ${i+1}`;
-    if (h.result) lbl += ` [${h.result.toUpperCase()}]`;
-    drawHand(h.cards, lbl, px, 80);
-    px += h.cards.length*26 + 40;
+  for(let i=0;i<state.hands.length;i++) {
+    const h=state.hands[i]; const active=i===state.activeHandIdx&&state.phase===PHASE.PLAYER;
+    let lbl=`${active?'>':' '}HAND ${i+1}`; if(h.result) lbl+=` [${h.result.toUpperCase()}]`;
+    drawHand(h.cards,lbl,px,80); px+=h.cards.length*26+40;
   }
-
   drawBetArea();
-
-  // Hints: recommended action label
-  if (state.hintsEnabled && state.phase===PHASE.PLAYER && state.currentRec) {
-    const lbl = 'Hint: '+state.currentRec.button.toUpperCase();
-    const tw = lbl.length*5;
-    fillRect(W/2-tw/2-4, H-20, tw+8, 13, 'rgba(40,20,50,0.85)');
-    ctx.strokeStyle='#c040c0'; ctx.lineWidth=0.5;
-    ctx.strokeRect(W/2-tw/2-4, H-20, tw+8, 13);
-    text(lbl, W/2-tw/2, H-10, '#e0a0e0', 7);
+  if (state.hintsEnabled&&state.phase===PHASE.PLAYER&&state.currentRec) {
+    const lbl='Hint: '+state.currentRec.button.toUpperCase(); const tw=lbl.length*5;
+    fillRect(W/2-tw/2-4,H-20,tw+8,13,'rgba(40,20,50,0.85)');
+    ctx.strokeStyle='#c040c0'; ctx.lineWidth=0.5; ctx.strokeRect(W/2-tw/2-4,H-20,tw+8,13);
+    text(lbl,W/2-tw/2,H-10,'#e0a0e0',7);
   }
-
-  text(`Bank: ${state.bankroll}`, 10, H-4, '#88aa88', 6);
-
+  text(`Bank: ${state.bankroll}`,10,H-4,'#88aa88',6);
   if (state.countOverlayVisible) drawCountOverlay();
 }
 
 // ─── UI WIRING ────────────────────────────────────────────────────────────────
 
 function updateButtons() {
-  const idle  = state.phase===PHASE.IDLE;
-  const player= state.phase===PHASE.PLAYER;
-  const done  = state.phase===PHASE.DONE;
-  const ins   = state.phase===PHASE.INSURANCE;
-  const betting = idle || done;
+  const idle=state.phase===PHASE.IDLE, player=state.phase===PHASE.PLAYER;
+  const done=state.phase===PHASE.DONE, ins=state.phase===PHASE.INSURANCE;
+  const betting=idle||done;
+  const b=id=>document.getElementById(id);
 
-  document.getElementById('btn-deal').disabled  = !betting || state.pendingBet <= 0;
-  document.getElementById('btn-next').disabled  = !done;
-  document.getElementById('btn-hit').disabled   = !player;
-  document.getElementById('btn-stand').disabled = !player;
-  document.getElementById('insurance-bar').classList.toggle('visible', ins);
-  document.getElementById('ins-hint').classList.toggle('visible', ins && state.hintsEnabled);
-  document.getElementById('btn-count').classList.toggle('active', state.countOverlayVisible);
-  document.getElementById('btn-hints').classList.toggle('active', state.hintsEnabled);
+  b('btn-deal').disabled   = !betting||state.pendingBet<=0;
+  b('btn-next').disabled   = !done;
+  b('btn-hit').disabled    = !player;
+  b('btn-stand').disabled  = !player;
+  b('insurance-bar').classList.toggle('visible', ins);
+  b('ins-hint').classList.toggle('visible', ins&&state.hintsEnabled);
+  b('btn-count').classList.toggle('active', state.countOverlayVisible||state.waitingForCountGuess);
+  b('btn-hints').classList.toggle('active', state.hintsEnabled);
+  b('btn-stats').classList.toggle('active', state.statsPanelOpen);
 
-  // Chip buttons: only during betting phases
-  ['chip-1','chip-5','chip-25','chip-100','btn-clear-bet'].forEach(id => {
-    document.getElementById(id).disabled = !betting;
-  });
+  ['chip-1','chip-5','chip-25','chip-100','btn-clear-bet'].forEach(id=>b(id).disabled=!betting);
 
-  ['btn-double','btn-split','btn-surrender'].forEach(id =>
-    document.getElementById(id).classList.remove('recommended'));
-  ['btn-hit','btn-stand'].forEach(id =>
-    document.getElementById(id).classList.remove('recommended'));
+  ['btn-double','btn-split','btn-surrender','btn-hit','btn-stand'].forEach(id=>
+    b(id).classList.remove('recommended'));
 
   if (!player) {
-    ['btn-double','btn-split','btn-surrender'].forEach(id =>
-      document.getElementById(id).disabled = true);
-    state.currentRec = null; return;
+    ['btn-double','btn-split','btn-surrender'].forEach(id=>b(id).disabled=true);
+    state.currentRec=null; return;
   }
-
-  const hand = activeHand();
-  document.getElementById('btn-double').disabled   = !isDoubleAvailable(hand);
-  document.getElementById('btn-split').disabled    = !isSplitAvailable(hand);
-  const canSur = CONFIG.surrender==='late' && hand.cards.length===2 && !hand.fromSplit;
-  document.getElementById('btn-surrender').disabled = !canSur;
-
+  const hand=activeHand();
+  b('btn-double').disabled   = !isDoubleAvailable(hand);
+  b('btn-split').disabled    = !isSplitAvailable(hand);
+  const canSur=CONFIG.surrender==='late'&&hand.cards.length===2&&!hand.fromSplit;
+  b('btn-surrender').disabled = !canSur;
   computeRec();
-  if (state.hintsEnabled && state.currentRec) {
-    document.getElementById('btn-'+state.currentRec.button)?.classList.add('recommended');
-  }
+  if (state.hintsEnabled&&state.currentRec) b('btn-'+state.currentRec.button)?.classList.add('recommended');
 }
 
-function toggleCount()   { state.countOverlayVisible = !state.countOverlayVisible; render(); updateButtons(); }
-function toggleHints() { state.hintsEnabled = !state.hintsEnabled; state.messageWrong = false; render(); updateButtons(); syncMsg(); }
+function toggleCount() {
+  if (state.countOverlayVisible) {
+    state.countOverlayVisible=false; hideCountGuessPanel();
+  } else if (state.waitingForCountGuess) {
+    submitCountGuess(true); // second C press = skip and reveal
+  } else {
+    const inHand=[PHASE.PLAYER,PHASE.INSURANCE].includes(state.phase);
+    if (inHand) showCountGuessPanel();
+    else { state.countOverlayVisible=true; }
+  }
+  render(); updateButtons();
+}
+
+function toggleHints()  { state.hintsEnabled=!state.hintsEnabled; state.messageWrong=false; render(); updateButtons(); syncMsg(); }
+function toggleStats()  {
+  state.statsPanelOpen=!state.statsPanelOpen;
+  document.getElementById('stats-panel').classList.toggle('open', state.statsPanelOpen);
+  if (state.statsPanelOpen) renderStats();
+  updateButtons();
+}
 
 function syncMsg() {
-  const el = document.getElementById('message');
-  el.textContent = state.message;
-  el.className   = state.messageWrong ? 'wrong' : '';
+  const el=document.getElementById('message'); el.textContent=state.message;
+  el.className=state.messageWrong?'wrong':'';
 }
-
 function refresh() { render(); updateButtons(); syncMsg(); }
 
-// Chip clicks
-document.getElementById('chip-1').addEventListener('click',   () => { addChip(1);   render(); updateButtons(); syncMsg(); });
-document.getElementById('chip-5').addEventListener('click',   () => { addChip(5);   render(); updateButtons(); syncMsg(); });
-document.getElementById('chip-25').addEventListener('click',  () => { addChip(25);  render(); updateButtons(); syncMsg(); });
-document.getElementById('chip-100').addEventListener('click', () => { addChip(100); render(); updateButtons(); syncMsg(); });
-document.getElementById('btn-clear-bet').addEventListener('click', () => { clearBet(); render(); updateButtons(); syncMsg(); });
+// Chip buttons
+['1','5','25','100'].forEach(d=>
+  document.getElementById('chip-'+d).addEventListener('click',()=>{ addChip(parseInt(d)); render(); updateButtons(); syncMsg(); }));
+document.getElementById('btn-clear-bet').addEventListener('click',()=>{ clearBet(); render(); updateButtons(); syncMsg(); });
 
 // Action buttons
-document.getElementById('btn-deal').addEventListener('click', () => {
-  state.phase = PHASE.IDLE; deal(); refresh();
-});
-document.getElementById('btn-hit').addEventListener('click',       () => { hit();        refresh(); });
-document.getElementById('btn-stand').addEventListener('click',     () => { stand();      refresh(); });
-document.getElementById('btn-double').addEventListener('click',    () => { doubleDown(); refresh(); });
-document.getElementById('btn-split').addEventListener('click',     () => { split();      refresh(); });
-document.getElementById('btn-surrender').addEventListener('click', () => { surrender();  refresh(); });
-document.getElementById('btn-next').addEventListener('click', () => {
-  state.phase = PHASE.IDLE;
-  // Show bet coach suggestion when idle if enabled
-  if (state.hintsEnabled) {
-    const s = suggestedBet();
-    const tc = count.trueCount();
-    setMsg(`Suggested bet: ${s}  (TC ${(tc>=0?'+':'')+tc.toFixed(1)})`);
-  } else {
-    setMsg('Place your bet and deal.');
-  }
+document.getElementById('btn-deal').addEventListener('click',()=>{ state.phase=PHASE.IDLE; deal(); refresh(); });
+document.getElementById('btn-hit').addEventListener('click',       ()=>{ hit();        refresh(); });
+document.getElementById('btn-stand').addEventListener('click',     ()=>{ stand();      refresh(); });
+document.getElementById('btn-double').addEventListener('click',    ()=>{ doubleDown(); refresh(); });
+document.getElementById('btn-split').addEventListener('click',     ()=>{ split();      refresh(); });
+document.getElementById('btn-surrender').addEventListener('click', ()=>{ surrender();  refresh(); });
+document.getElementById('btn-next').addEventListener('click',()=>{
+  state.phase=PHASE.IDLE;
+  setMsg(state.hintsEnabled
+    ? `Suggested bet: ${suggestedBet()}  (TC ${(count.trueCount()>=0?'+':'')+count.trueCount().toFixed(1)})`
+    : 'Place your bet and deal.');
   render(); updateButtons(); syncMsg();
 });
-document.getElementById('btn-ins-yes').addEventListener('click', () => { takeInsurance();   refresh(); });
-document.getElementById('btn-ins-no').addEventListener('click',  () => { declineInsurance(); refresh(); });
-document.getElementById('btn-count').addEventListener('click',   () => toggleCount());
-document.getElementById('btn-hints').addEventListener('click',   () => toggleHints());
+document.getElementById('btn-ins-yes').addEventListener('click',()=>{ takeInsurance();   refresh(); });
+document.getElementById('btn-ins-no').addEventListener('click', ()=>{ declineInsurance(); refresh(); });
+document.getElementById('btn-count').addEventListener('click',  ()=> toggleCount());
+document.getElementById('btn-hints').addEventListener('click',  ()=> toggleHints());
+document.getElementById('btn-stats').addEventListener('click',  ()=> toggleStats());
 
-document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT') return;
-  const k = e.key.toUpperCase();
-  const b = id => document.getElementById(id);
-  if      (k==='D' && !b('btn-deal').disabled)      b('btn-deal').click();
-  else if (k==='H' && !b('btn-hit').disabled)        b('btn-hit').click();
-  else if (k==='S' && !b('btn-stand').disabled)      b('btn-stand').click();
-  else if (k==='W' && !b('btn-double').disabled)     b('btn-double').click();
-  else if (k==='P' && !b('btn-split').disabled)      b('btn-split').click();
-  else if (k==='R' && !b('btn-surrender').disabled)  b('btn-surrender').click();
-  else if (k==='N' && !b('btn-next').disabled)       b('btn-next').click();
-  else if (k==='C') toggleCount();
-  else if (k==='I') toggleHints();
+// Count guess panel
+document.getElementById('btn-rc-check').addEventListener('click', ()=> submitCountGuess(false));
+document.getElementById('btn-rc-skip').addEventListener('click',  ()=> submitCountGuess(true));
+document.getElementById('rc-guess-input').addEventListener('keydown', e=>{
+  if (e.key==='Enter')  submitCountGuess(false);
+  if (e.key==='Escape') submitCountGuess(true);
 });
 
-// Initial render
+// Stats panel actions
+document.getElementById('btn-new-session').addEventListener('click',  newSession);
+document.getElementById('btn-reset-all').addEventListener('click',    resetAll);
+document.getElementById('btn-export-stats').addEventListener('click', exportStats);
+document.getElementById('btn-import-stats').addEventListener('click', ()=> document.getElementById('import-file').click());
+document.getElementById('import-file').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(f) importStats(f); e.target.value='';
+});
+
+// Keyboard
+document.addEventListener('keydown', e=>{
+  if (e.target.tagName==='INPUT') return;
+  const k=e.key.toUpperCase(); const b=id=>document.getElementById(id);
+  if      (k==='D'&&!b('btn-deal').disabled)      b('btn-deal').click();
+  else if (k==='H'&&!b('btn-hit').disabled)        b('btn-hit').click();
+  else if (k==='S'&&!b('btn-stand').disabled)      b('btn-stand').click();
+  else if (k==='W'&&!b('btn-double').disabled)     b('btn-double').click();
+  else if (k==='P'&&!b('btn-split').disabled)      b('btn-split').click();
+  else if (k==='R'&&!b('btn-surrender').disabled)  b('btn-surrender').click();
+  else if (k==='N'&&!b('btn-next').disabled)       b('btn-next').click();
+  else if (k==='C') toggleCount();
+  else if (k==='I') toggleHints();
+  else if (k==='T') toggleStats();
+});
+
+// Boot
 render(); updateButtons(); syncMsg();
 </script>
 </body>
