@@ -1086,19 +1086,21 @@ function playSound(type) {
   const now = ac.currentTime;
 
   if (type === 'deal') {
-    const osc = ac.createOscillator(), g = ac.createGain();
-    osc.connect(g); g.connect(ac.destination);
-    osc.type = 'square'; osc.frequency.value = 1400;
-    g.gain.setValueAtTime(0.07, now);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-    osc.start(now); osc.stop(now + 0.05);
-    // soft whoosh
-    const buf = ac.createBuffer(1, ac.sampleRate * 0.08, ac.sampleRate);
+    // Noise burst — papery "thwap" of card hitting felt
+    const sr = ac.sampleRate;
+    const dur = 0.06;
+    const buf = ac.createBuffer(1, Math.ceil(sr * dur), sr);
     const d = buf.getChannelData(0);
-    for (let i=0; i<d.length; i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
-    const src = ac.createBufferSource(), gn = ac.createGain();
-    src.buffer = buf; src.connect(gn); gn.connect(ac.destination);
-    gn.gain.value = 0.04; src.start(now + 0.02);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.8;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.6, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.connect(bp); bp.connect(g); g.connect(ac.destination);
+    src.start(now); src.stop(now + dur);
   } else if (type === 'win') {
     // Rising major arpeggio: C5 E5 G5
     [[523, 0], [659, 0.1], [784, 0.2]].forEach(([freq, delay]) => {
@@ -1660,7 +1662,10 @@ document.getElementById('import-file').addEventListener('change', e=>{
 // Keyboard
 document.addEventListener('keydown', e=>{
   if (e.target.tagName==='INPUT') return;
-  const k=e.key.toUpperCase(); const b=id=>document.getElementById(id);
+  const b=id=>document.getElementById(id);
+  if (e.key===' '&&!b('btn-hit').disabled)     { e.preventDefault(); b('btn-hit').click(); return; }
+  if (e.key==='Enter'&&!b('btn-stand').disabled){ b('btn-stand').click(); return; }
+  const k=e.key.toUpperCase();
   if      (k==='D'&&!b('btn-deal').disabled)      b('btn-deal').click();
   else if (k==='H'&&!b('btn-hit').disabled)        b('btn-hit').click();
   else if (k==='S'&&!b('btn-stand').disabled)      b('btn-stand').click();
