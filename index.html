@@ -85,9 +85,6 @@
   button.hint-btn { background: #2a1a2a; border-color: #6a3a6a; color: #c8a0c8; }
   button.hint-btn:hover:not(:disabled) { background: #3a2a3a; }
   button.hint-btn.active { background: #3a0a3a; border-color: #c040c0; color: #f0b0f0; }
-  button.coach-btn { background: #1a2a3a; border-color: #3a6a9a; color: #90c0e8; }
-  button.coach-btn:hover:not(:disabled) { background: #2a3a4a; }
-  button.coach-btn.active { background: #0a2040; border-color: #40a0e0; color: #a0d8ff; }
   button.recommended {
     outline: 2px solid #f0d040;
     outline-offset: 2px;
@@ -140,7 +137,6 @@
   <button id="chip-25"  class="chip chip-25">25</button>
   <button id="chip-100" class="chip chip-100">100</button>
   <button id="btn-clear-bet" class="chip-clear">Clear</button>
-  <button id="btn-bet-coach" class="coach-btn">Bet Coach [B]</button>
 </div>
 
 <!-- action row -->
@@ -402,7 +398,7 @@ function addChip(amount) {
   }
   state.pendingBet = newBet;
   state.messageWrong = false;
-  if (state.betCoachEnabled) {
+  if (state.hintsEnabled) {
     const s = suggestedBet();
     const tc = count.trueCount();
     setMsg(`Bet: ${state.pendingBet}  |  Suggested: ${s} (TC ${tc >= 0 ? '+' : ''}${tc.toFixed(1)})`);
@@ -426,7 +422,7 @@ function suggestedBet() {
 
 // Called right before cards are dealt — logs a note if bet deviates notably
 function checkBetCoach() {
-  if (!state.betCoachEnabled) return;
+  if (!state.hintsEnabled) return;
   const suggested = suggestedBet();
   const actual    = state.pendingBet;
   const tc        = count.trueCount();
@@ -475,7 +471,6 @@ let state = {
   betCoachNote: null,
   countOverlayVisible: false,
   hintsEnabled: false,
-  betCoachEnabled: false,
   currentRec: null,
   strategyStats: {
     session: { correct: 0, incorrect: 0 },
@@ -750,7 +745,7 @@ function drawBetArea() {
   text(`${betAmt} units`, bx+4, by+38, locked?'#778877':'#f0d080', 7);
 
   // Bet coach suggestion
-  if (state.betCoachEnabled && !locked) {
+  if (state.hintsEnabled && !locked) {
     const s = suggestedBet();
     const tc = count.trueCount();
     const tcs = (tc>=0?'+':'')+tc.toFixed(1);
@@ -824,7 +819,6 @@ function updateButtons() {
   document.getElementById('ins-hint').classList.toggle('visible', ins && state.hintsEnabled);
   document.getElementById('btn-count').classList.toggle('active', state.countOverlayVisible);
   document.getElementById('btn-hints').classList.toggle('active', state.hintsEnabled);
-  document.getElementById('btn-bet-coach').classList.toggle('active', state.betCoachEnabled);
 
   // Chip buttons: only during betting phases
   ['chip-1','chip-5','chip-25','chip-100','btn-clear-bet'].forEach(id => {
@@ -855,8 +849,7 @@ function updateButtons() {
 }
 
 function toggleCount()   { state.countOverlayVisible = !state.countOverlayVisible; render(); updateButtons(); }
-function toggleHints()   { state.hintsEnabled = !state.hintsEnabled; state.messageWrong = false; render(); updateButtons(); syncMsg(); }
-function toggleBetCoach(){ state.betCoachEnabled = !state.betCoachEnabled; render(); updateButtons(); syncMsg(); }
+function toggleHints() { state.hintsEnabled = !state.hintsEnabled; state.messageWrong = false; render(); updateButtons(); syncMsg(); }
 
 function syncMsg() {
   const el = document.getElementById('message');
@@ -872,7 +865,6 @@ document.getElementById('chip-5').addEventListener('click',   () => { addChip(5)
 document.getElementById('chip-25').addEventListener('click',  () => { addChip(25);  render(); updateButtons(); syncMsg(); });
 document.getElementById('chip-100').addEventListener('click', () => { addChip(100); render(); updateButtons(); syncMsg(); });
 document.getElementById('btn-clear-bet').addEventListener('click', () => { clearBet(); render(); updateButtons(); syncMsg(); });
-document.getElementById('btn-bet-coach').addEventListener('click', () => toggleBetCoach());
 
 // Action buttons
 document.getElementById('btn-deal').addEventListener('click', () => {
@@ -886,7 +878,7 @@ document.getElementById('btn-surrender').addEventListener('click', () => { surre
 document.getElementById('btn-next').addEventListener('click', () => {
   state.phase = PHASE.IDLE;
   // Show bet coach suggestion when idle if enabled
-  if (state.betCoachEnabled) {
+  if (state.hintsEnabled) {
     const s = suggestedBet();
     const tc = count.trueCount();
     setMsg(`Suggested bet: ${s}  (TC ${(tc>=0?'+':'')+tc.toFixed(1)})`);
@@ -913,7 +905,6 @@ document.addEventListener('keydown', e => {
   else if (k==='N' && !b('btn-next').disabled)       b('btn-next').click();
   else if (k==='C') toggleCount();
   else if (k==='I') toggleHints();
-  else if (k==='B') toggleBetCoach();
 });
 
 // Initial render
