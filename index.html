@@ -27,7 +27,7 @@
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    image-rendering: pixelated;
+    image-rendering: auto;
     display: block;
   }
   #overlay-btns {
@@ -237,7 +237,6 @@
     <button id="chip-10"  class="chip chip-10">10</button>
     <button id="chip-25"  class="chip chip-25">25</button>
     <button id="chip-100" class="chip chip-100">100</button>
-    <button id="btn-clear-bet">Clear</button>
   </div>
   <div id="controls">
     <button id="btn-deal"      class="primary">▶ SPACE to deal</button>
@@ -246,6 +245,7 @@
     <button id="btn-double"    disabled>Double [W]</button>
     <button id="btn-split"     disabled>Split [P]</button>
     <button id="btn-surrender" disabled>Surrender [R]</button>
+    <button id="btn-clear-bet" disabled>Clear bet</button>
     <button id="btn-shuffle"   disabled>Shuffle</button>
   </div>
 </div>
@@ -1277,9 +1277,14 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const CW = 640, CH = 360;
-const CARD_W = 44, CARD_H = 60, CARD_STEP = 50;
-const DEALER_Y = 248, PLAYER_Y = 298;
-const SHOE_X = 452, SHOE_Y = 220; // on the felt, dealer's right
+// Supersample: draw at 2x backing resolution so vector elements (chips, cards,
+// table) are smooth instead of nearest-neighbour blocky. Logical coords stay 640x360.
+const SS = 2;
+canvas.width = CW * SS;
+canvas.height = CH * SS;
+const CARD_W = 32, CARD_H = 44, CARD_STEP = 24;
+const DEALER_Y = 216, PLAYER_Y = 262;
+const SHOE_X = 470, SHOE_Y = 214; // on the felt, dealer's right
 const FELT = '#2D5A3D', RAIL = '#8B4513', ROOM = '#1A1008';
 const CARD_FACE = '#F5F0E8', CARD_RED = '#C41E3A', GOLD = '#D4A017';
 
@@ -1655,40 +1660,38 @@ function drawTable() {
   ctx.setLineDash([]);
   ctx.restore();
 
-  // Shoe widget — compact stack of card backs beside the dealer
+  // Shoe widget — small stack of card backs (matches the navy/gold deck design)
+  const SHW = 26, SHH = 36;
   for (let i = 3; i >= 0; i--) {
-    const sx = SHOE_X + i*2, sy = SHOE_Y + i*2;
-    ctx.fillStyle = '#9A1828';
-    ctx.fillRect(sx, sy, 40, 54);
-    ctx.fillStyle = CARD_RED;
-    ctx.fillRect(sx+2, sy+2, 36, 50);
-    ctx.fillStyle = '#9A1828';
-    for (let dy = 0; dy < 50; dy += 8) {
-      for (let dx = 0; dx < 36; dx += 8) {
-        if ((dx/8 + dy/8) % 2 === 0) ctx.fillRect(sx+2+dx, sy+2+dy, 4, 4);
-      }
-    }
-    ctx.strokeStyle = '#F5F0E888';
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(sx+2, sy+2, 36, 50);
+    const sx = SHOE_X + i*1.5, sy = SHOE_Y + i*1.5;
+    ctx.fillStyle = '#0D1638';
+    ctx.fillRect(sx, sy, SHW, SHH);
+    ctx.strokeStyle = '#C8962A'; ctx.lineWidth = 0.7;
+    ctx.strokeRect(sx + 1.5, sy + 1.5, SHW - 3, SHH - 3);
+    // central diamond
+    const dcx = sx + SHW/2, dcy = sy + SHH/2;
+    ctx.beginPath();
+    ctx.moveTo(dcx, dcy - 6); ctx.lineTo(dcx + 4, dcy);
+    ctx.lineTo(dcx, dcy + 6); ctx.lineTo(dcx - 4, dcy);
+    ctx.closePath(); ctx.stroke();
   }
   ctx.fillStyle = '#F5F0E860';
   ctx.font = 'bold 6px monospace';
-  ctx.fillText('SHOE', SHOE_X + 6, SHOE_Y + 62);
+  ctx.fillText('SHOE', SHOE_X + 3, SHOE_Y + SHH + 9);
 
   // Shuffle animation glow
   if (shuffleAnim) {
     const elapsed = performance.now() - shuffleAnim.t0;
     const flicker = Math.floor(elapsed / 80) % 2;
     ctx.strokeStyle = flicker === 0 ? '#D4A017' : '#FFD060';
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(SHOE_X - 2, SHOE_Y - 2, 48, 62);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(SHOE_X - 2, SHOE_Y - 2, 34, 44);
     ctx.fillStyle = (flicker === 0 ? '#D4A017' : '#FFD060') + '22';
-    ctx.fillRect(SHOE_X - 2, SHOE_Y - 2, 48, 62);
+    ctx.fillRect(SHOE_X - 2, SHOE_Y - 2, 34, 44);
     ctx.fillStyle = flicker === 0 ? '#D4A017' : '#FFD060';
     ctx.font = 'bold 7px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SHUFFLING...', SHOE_X + 22, SHOE_Y + 74);
+    ctx.fillText('SHUFFLING...', SHOE_X + 15, SHOE_Y + 56);
     ctx.textAlign = 'left';
   }
 
@@ -1752,26 +1755,26 @@ function drawCard(card, x, y, flipProg) {
 
     // Top-left rank + suit
     ctx.fillStyle = col;
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText(card.rank, 3, 12);
-    ctx.font = '8px monospace';
-    ctx.fillText(card.suit, 3, 21);
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText(card.rank, 2.5, 10);
+    ctx.font = '7px monospace';
+    ctx.fillText(card.suit, 2.5, 18);
 
     // Center suit glyph
-    ctx.font = '18px monospace';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(card.suit, CARD_W/2, CARD_H/2 + 6);
+    ctx.fillText(card.suit, CARD_W/2, CARD_H/2 + 5);
     ctx.textAlign = 'left';
 
     // Bottom-right rank + suit (rotated 180)
     ctx.save();
-    ctx.translate(CARD_W - 3, CARD_H - 4);
+    ctx.translate(CARD_W - 2.5, CARD_H - 3);
     ctx.rotate(Math.PI);
     ctx.fillStyle = col;
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText(card.rank, 0, 9);
-    ctx.font = '8px monospace';
-    ctx.fillText(card.suit, 0, 18);
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText(card.rank, 0, 8);
+    ctx.font = '7px monospace';
+    ctx.fillText(card.suit, 0, 16);
     ctx.restore();
   }
 
@@ -1923,8 +1926,7 @@ function drawBetArea() {
 
 // Canvas chip constants — chips spread in a U arc along the table front
 const CHIP_BAR_DENOMS = [1, 5, 10, 25, 100];
-const CHIP_BAR_RADIUS = 10;
-const CHIP_BAR_CLEAR_W = 26, CHIP_BAR_CLEAR_H = 11;
+const CHIP_BAR_RADIUS = 9;
 const CHIP_BAR_COLORS = [
   { bg: '#727272', border: '#C0C0C0' },
   { bg: '#8B1A1A', border: '#E03A3A' },
@@ -1936,24 +1938,18 @@ const CHIP_BAR_COLORS = [
 function chipBarY() { return CH - 28; } // legacy — chips now use _chipPositions()
 
 function _chipPositions() {
-  const angles = [30, 60, 90, 120, 150].map(a => a * Math.PI / 180);
-  const acx = TABLE_CX, acy = TABLE_TOP_Y + 32;
+  // Shallow U arc hugging the table's front edge, below the player cards
+  const angles = [38, 64, 90, 116, 142].map(a => a * Math.PI / 180);
+  const acx = TABLE_CX, acy = 312;
   return angles.map(a => ({
-    x: Math.round(acx + 162 * Math.cos(a)),
-    y: Math.round(acy +  56 * Math.sin(a))
+    x: Math.round(acx + 118 * Math.cos(a)),
+    y: Math.round(acy +  18 * Math.sin(a))
   }));
-}
-
-function _clearBtnCenter() {
-  return { x: TABLE_CX, y: TABLE_TOP_Y + 96 };
 }
 
 function drawChipBar() {
   const betting = state.phase === PHASE.IDLE || state.phase === PHASE.DONE;
-  const cy = chipBarY();
-
   const chips = _chipPositions();
-  const clrC  = _clearBtnCenter();
 
   // BET display — above the chip arc, center of table
   const betAmt = betting ? state.pendingBet : state.bet;
@@ -1961,7 +1957,7 @@ function drawChipBar() {
   ctx.font = 'bold 10px monospace';
   ctx.textAlign = 'center';
   const betLabel = betting ? (betAmt > 0 ? `BET: ${betAmt}` : 'BET: —') : `BET (locked): ${betAmt}`;
-  ctx.fillText(betLabel, TABLE_CX, chips[2].y - 20);
+  ctx.fillText(betLabel, TABLE_CX, chips[2].y - 16);
   ctx.textAlign = 'left';
 
   const alpha = betting ? 1.0 : 0.3;
@@ -1996,17 +1992,6 @@ function drawChipBar() {
     ctx.fillText(String(CHIP_BAR_DENOMS[i]), px, py);
     ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
   }
-
-  // Small clear button below chip arc
-  const clx = clrC.x - CHIP_BAR_CLEAR_W / 2, cly = clrC.y - CHIP_BAR_CLEAR_H / 2;
-  ctx.fillStyle = '#1A0A04';
-  roundRect(ctx, clx, cly, CHIP_BAR_CLEAR_W, CHIP_BAR_CLEAR_H, 3); ctx.fill();
-  ctx.strokeStyle = '#5A3008'; ctx.lineWidth = 0.8;
-  roundRect(ctx, clx, cly, CHIP_BAR_CLEAR_W, CHIP_BAR_CLEAR_H, 3); ctx.stroke();
-  ctx.fillStyle = '#C8901A'; ctx.font = '7px monospace';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('CLR', clrC.x, clrC.y);
-  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
 
   ctx.globalAlpha = 1.0;
 }
@@ -2067,6 +2052,7 @@ function drawHintLabel() {
 
 function render() {
   const now = performance.now();
+  ctx.setTransform(SS, 0, 0, SS, 0, 0); // apply supersample scale; logical coords stay 640x360
   ctx.save();
 
   // Screen shake
@@ -2261,14 +2247,14 @@ document.getElementById('btn-clear-bet').addEventListener('click',()=>{ clearBet
 // Canvas chip bar click handler
 canvas.addEventListener('click', function(e) {
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
+  const scaleX = CW / rect.width;  // map to logical 640x360 space (independent of SS backing)
+  const scaleY = CH / rect.height;
   const mx = (e.clientX - rect.left) * scaleX;
   const my = (e.clientY - rect.top) * scaleY;
   const betting = state.phase === PHASE.IDLE || state.phase === PHASE.DONE;
   if (!betting) return;
   const chips = _chipPositions();
-  const r2 = CHIP_BAR_RADIUS * CHIP_BAR_RADIUS;
+  const r2 = (CHIP_BAR_RADIUS + 3) * (CHIP_BAR_RADIUS + 3); // slightly forgiving hit radius
   for (let i = 0; i < CHIP_BAR_DENOMS.length; i++) {
     const pos = chips[i];
     const dx = mx - pos.x, dy = my - pos.y;
@@ -2277,11 +2263,6 @@ canvas.addEventListener('click', function(e) {
       render(); updateButtons(); syncMsg();
       return;
     }
-  }
-  const clrC = _clearBtnCenter();
-  const clx = clrC.x - CHIP_BAR_CLEAR_W / 2, cly = clrC.y - CHIP_BAR_CLEAR_H / 2;
-  if (mx >= clx && mx <= clx + CHIP_BAR_CLEAR_W && my >= cly && my <= cly + CHIP_BAR_CLEAR_H) {
-    clearBet(); render(); updateButtons(); syncMsg();
   }
 });
 
