@@ -919,7 +919,6 @@ function hit() {
   if (isBust(hand.cards)) {
     if(!state.messageWrong) setMsg('Bust!');
     hand.done=true;
-    triggerShake();
     advanceHand();
   } else if (handTotal(hand.cards).total===21) { stand(); }
   else { if(!state.messageWrong) setMsg('Hit. Total: '+handTotal(hand.cards).total); }
@@ -934,7 +933,6 @@ function doubleDown() {
   const finalX = cardStartX(hand.cards.length, cx) + (hand.cards.length-1)*CARD_STEP;
   queueSlide(card, SHOE_X, SHOE_Y, finalX, PLAYER_Y, 0);
   if(!state.messageWrong) setMsg(isBust(hand.cards)?'Double — Bust!':'Double. Total: '+handTotal(hand.cards).total);
-  if (isBust(hand.cards)) triggerShake();
   advanceHand();
 }
 function split() {
@@ -1479,15 +1477,6 @@ function drawTable() {
   ctx.fillStyle = vg;
   ctx.fillRect(18, FELT_TOP, 604, FELT_H);
 
-  // Center arc decoration between dealer and player zones
-  ctx.beginPath();
-  ctx.arc(290, 250, 86, Math.PI * 0.12, Math.PI * 0.88);
-  ctx.strokeStyle = '#254830';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 6]);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
   // Shoe widget — compact stack of card backs beside the dealer
   for (let i = 3; i >= 0; i--) {
     const sx = SHOE_X + i*2, sy = SHOE_Y + i*2;
@@ -1524,13 +1513,6 @@ function drawTable() {
     ctx.fillText('SHUFFLING...', SHOE_X + 22, SHOE_Y + 74);
     ctx.textAlign = 'left';
   }
-
-  // Shadow arc at top felt edge (under the dealer)
-  ctx.beginPath();
-  ctx.ellipse(290, FELT_TOP + 12, 175, 14, 0, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
 
   // Bankroll display — top-left, in the room area
   ctx.fillStyle = GOLD;
@@ -1940,7 +1922,7 @@ function render() {
     }
   }
 
-  // Result banner
+  // Result banner — casino placard style
   if (bannerAnim) {
     const ba = bannerAnim;
     const elapsed = now - ba.t0;
@@ -1955,33 +1937,37 @@ function render() {
 
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.font = 'bold 26px monospace';
+
+      ctx.font = 'bold 17px monospace';
       const tw = ctx.measureText(ba.text).width;
-      const pad = 22;
-      const bw = Math.max(160, tw + pad * 2);
-      const bh = 52;
+      const padH = 20, padV = 9;
+      const bw = Math.max(130, tw + padH * 2);
+      const bh = 36;
       const bx = CW / 2 - bw / 2;
-      const by = CH / 2 - bh / 2;
+      const by = CH / 2 - bh / 2 - 8; // slightly above center
 
-      // Shadow halo
-      ctx.shadowColor = ba.color;
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = 'rgba(6,3,1,0.92)';
-      roundRect(ctx, bx, by, bw, bh, 11);
+      // Deep warm background
+      ctx.fillStyle = 'rgba(10, 5, 2, 0.96)';
+      roundRect(ctx, bx, by, bw, bh, 3);
       ctx.fill();
-      ctx.shadowBlur = 0;
 
-      // Border
-      ctx.strokeStyle = ba.color;
-      ctx.lineWidth = 2;
-      roundRect(ctx, bx, by, bw, bh, 11);
+      // Outer gold border
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, bx, by, bw, bh, 3);
+      ctx.stroke();
+
+      // Inner hairline in the result color
+      ctx.strokeStyle = ba.color + '66';
+      ctx.lineWidth = 0.5;
+      roundRect(ctx, bx + 4, by + 4, bw - 8, bh - 8, 1);
       ctx.stroke();
 
       // Text
       ctx.fillStyle = ba.color;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(ba.text, CW / 2, CH / 2);
+      ctx.fillText(ba.text, CW / 2, by + bh / 2);
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
       ctx.restore();
