@@ -1,276 +1,232 @@
 # SPEC.md — Blackjack Card Counting Trainer
 
-A single-file, offline, browser-based blackjack game with an 8-bit / retro pixel
-aesthetic, built to teach **Hi-Lo card counting** and **perfect basic strategy**
-through real play. No ads, no monetization, no server, no tracking. Runs by
-opening `index.html` in any browser.
+A single-file, offline, browser-based blackjack trainer built to teach **Hi-Lo
+card counting** and **perfect basic strategy** through real play. No ads, no
+server, no tracking. Runs by opening `index.html` in any browser.
 
-This document is the source of truth. Build it in the phases below. **Pause after
-each phase** so the human can test in the browser before continuing.
+This document reflects the current state of the project and the direction it is
+heading. It is a living reference, not a construction checklist.
 
 ---
 
-## 0. Tech & architecture decisions (locked)
+## The Vision
+
+The experience should feel like sitting across from a dealer at a proper table
+in a 1950s jazz lounge — warm lamplight, a little smoky, unhurried. The player
+faces a real dealer figure, a genuine felt table, and a room that exists behind
+it all. The trainer aspect is woven in subtly: counts and hints are available
+but never intrusive.
+
+The aesthetic is **warm pixel art**: rich, readable, atmospheric. Not garish
+Vegas neon, not cold sci-fi. Cards and chips should feel physically present.
+
+---
+
+## Architecture
 
 - **Stack:** Vanilla HTML + CSS + JavaScript. No frameworks, no build step, no npm.
-- **Rendering:** A single `<canvas>` for the table, cards, chips, and animations.
-  DOM/HTML only for menus, toggles, the settings panel, and stats overlays.
-- **Pixel look:** `image-rendering: pixelated;` on the canvas. Render at a low
-  internal resolution (e.g. 480×270 or 320×180) and scale up with CSS to keep
-  crisp pixels. Cards are **drawn procedurally on the canvas** (rects, pips,
-  rank glyphs in a bitmap-style font) — do NOT depend on external image files.
-- **Fonts:** Use a pixel/bitmap webfont loaded via a `<style>` `@font-face` from a
-  CC0/OFL source embedded as a data-URI if possible, OR fall back to a CSS pixel
-  font stack. If no font available, draw rank/suit glyphs procedurally. The game
-  must work with zero network access.
-- **Sound:** Web Audio API. Synthesize the three sounds procedurally (square/
-  triangle wave blips) so there are **no external audio files**:
-  - card deal/flip: short click/whoosh
-  - win: rising arpeggio
-  - lose: falling tone
-  A master mute toggle is required.
-- **Persistence:** `localStorage`. Two scopes:
-  - `session` stats (reset when page reloads or via a "New session" button)
-  - `allTime` stats (persist across reloads)
-  Plus an **Export stats** button that downloads a JSON file, and an **Import**
-  that reads one back (this is the "save to my PC" the human wanted, done safely).
-- **File layout:** Prefer a single `index.html` with embedded `<style>` and
-  `<script>`. If it grows unwieldy, split into `index.html` + `game.js` +
-  `style.css` in the same folder — still no build step. Decide based on size.
-- **No external network calls of any kind at runtime.**
+- **Single file:** `index.html` with embedded `<style>` and `<script>`. The background
+  image is baked in as a base64 data-URI constant (`BG_SRC`).
+- **Canvas:** 640×360 internal resolution, CSS-scaled 16:9. `image-rendering: pixelated`.
+  The canvas renders everything except menus/panels (stats, settings).
+- **Sound:** Web Audio API, synthesized procedurally — no external audio files.
+- **Persistence:** `localStorage`. Keys: `bj_alltime_v1` (stats), `bj_settings_v1`
+  (table config).
+- **No network calls at runtime.**
 
 ---
 
-## 1. Core blackjack engine (Phase 1)
+## Current State — What's Built
 
-Build the rules engine first, headless-ish (logic separated from rendering so it's
-testable).
+### Layout
+The canvas is divided into two zones:
 
-- Shoe of N decks (configurable, see settings). 52 cards per deck, standard ranks.
-- Deal flow: player gets 2 cards up, dealer 1 up + 1 hole card.
-- Player actions: **Hit, Stand, Double, Split, Surrender** (each respecting the
-  configured rules — e.g. Surrender only if enabled).
-- Splitting: allow re-splits up to configured max; split aces get one card each
-  (configurable); Double After Split (DAS) respected.
-- Dealer plays out by rule: hits/stands on soft 17 per setting (H17/S17).
-- Blackjack payout configurable (3:2 or 6:5 or 1:1).
-- Correct handling of soft/hard totals, busts, pushes, blackjacks.
-- Insurance offered when dealer shows an Ace (player can take/decline; default
-  advice is don't take — tie this into the hint engine later).
-- **The cut card / shuffle:** the shoe reshuffles when penetration threshold is
-  reached (configurable). A visible cut card marker is a nice-to-have.
+- **Room zone (top ~50%):** The jazz lounge background image shows through here.
+  The dealer figure and shoe widget live in this zone, immediately above the felt.
+- **Table zone (bottom ~50%):** Felt oval with mahogany rail and brass trim.
+  Dealer cards sit just inside the top of the felt; player cards in the lower
+  half. The chip bar and bet display sit at the bottom of the felt. Action
+  buttons are HTML elements below the canvas.
 
-Deliverable at end of Phase 1: a playable but ugly version (placeholder rendering
-is fine) where a full round can be played start to finish with correct rules.
+Constants that define this geometry:
+```
+CW = 640, CH = 360
+FELT_TOP = 178, FELT_H = 216  (felt runs from y=178 to y=394, clipped at canvas bottom)
+DEALER_Y = 156                 (dealer cards)
+PLAYER_Y = 296                 (player cards)
+SHOE_X = 348, SHOE_Y = 108    (shoe widget, adjacent to the dealer figure)
+```
 
----
+### Background
+A pixel-art jazz lounge scene is hardcoded as a base64 webp in the `BG_SRC`
+constant. To swap it: replace the string value of `BG_SRC`. The fallback (when
+`BG_SRC` is empty) is a flat dark warm brown fill (`ROOM = '#1A1008'`).
 
-## 2. Hi-Lo counting core + show/hide overlay (Phase 2)
+### Dealer Figure
+An animated brass automaton drawn procedurally with canvas 2D primitives.
+Four poses: `idle`, `dealing`, `win`, `lose`. Arms and eye colour lerp smoothly
+between poses via `dealerPoseAnim`.
 
-- **Running count** updated as each card is revealed: 2–6 = +1, 7–9 = 0,
-  10/J/Q/K/A = −1.
-- **True count** = running count ÷ decks remaining (estimate decks remaining from
-  cards dealt vs shoe size; round to nearest half-deck for the estimate).
-- **Show/Hide toggle**: a button (and a hotkey, e.g. `C`) that reveals an overlay
-  showing the current **running count** and **true count**. Hidden by default so
-  the player practices keeping the count in their head, then peeks to check.
-- The count must update live as cards animate in.
-- Reset count correctly on shuffle.
+The robot is a **placeholder**. The intended final state is a human pixel-art
+dealer sprite. The pose state machine (`DEALER_POSE`, `setDealerPose`,
+`setDealerPoseWith`) will remain; only the draw function changes.
 
-Deliverable: player can play and toggle the count overlay on/off to self-check.
+Eye colours by pose:
+- Idle: warm amber `#F0B83C`
+- Dealing: focused warm white `#FFE9B0`
+- Win (dealer won): warm red `#E0503A`
+- Lose (dealer lost): green `#6FBF5A`
 
----
+### Cards
+Drawn procedurally: warm off-white face `#F5F0E8`, pixel diamond back pattern.
+Suits as Unicode glyphs. Red suits use `CARD_RED = '#C41E3A'`.
 
-## 3. Basic strategy hint engine (Phase 3)
+Animations: slide from shoe, flip reveal (scale-X interpolation), bust shake,
+blackjack gold flash.
 
-Encode the basic strategy tables EXACTLY as provided by the human (see
-`STRATEGY.md` which the human will supply, or the embedded tables below). Two
-table sets exist: a baseline set and an H17/deviation set — use the set that
-matches the current table rules (specifically H17 vs S17). For now implement the
-**H17 + Late Surrender** version as primary, since that matches the provided chart.
+### Chips
+Denominations: 1 / 5 / 10 / 25 / 100.
 
-Tables to encode (dealer upcard 2–A across the top):
+Chips are drawn on the canvas felt (not HTML buttons). The HTML chip buttons
+remain in the DOM (hidden) for their event-listener wiring; canvas click
+hit-testing calls the same `addChip()` / `clearBet()` functions.
 
-- **Pair splitting** (A,A / T,T / 9,9 / 8,8 / 7,7 / 6,6 / 5,5 / 4,4 / 3,3 / 2,2),
-  with Y / Y-if-DAS / N semantics.
-- **Soft totals** (A,9 down to A,2): H / S / D (double else hit) / Ds (double else
-  stand).
-- **Hard totals** (17 down to 8): H / S / D.
-- **Late surrender**: 16 vs 9/10/A, 15 vs 10 (baseline); plus the H17 additions
-  shown in the chart (e.g. 17 vs A, 15 vs A, etc. as per the provided image).
-- **Insurance:** don't take (baseline). (Counting deviation handled in Phase 4.)
+Win payouts animate as a chip-stack arc from dealer zone to bet area.
 
-Hint behaviour (toggleable, OFF by default):
+### Chip Bar (canvas)
+Drawn at the bottom of the felt. Five coloured circles, a CLEAR button, and
+a `BET: X` label above. Dims to 30% opacity when not in a betting phase.
 
-- When ON, for the player's current hand vs dealer upcard, show the correct
-  action recommendation BEFORE the player acts (a subtle highlight or label on the
-  recommended button).
-- After the player acts, if their action differed from correct play, show a
-  **"Wrong" indicator + a one-line reason** explaining why, e.g.
-  *"Stand: hard 16 vs dealer 10 — high bust risk, basic strategy stands."*
-  The reason should reference the relevant factor (total, dealer upcard, and where
-  relevant the true count once Phase 4 deviations are in).
-- When hint is OFF, the game says nothing and just lets the player play.
-- Correct/incorrect decisions are recorded for stats (Phase 5).
+Chip positions (center X): `[155, 220, 285, 350, 415]`, radius 16px.
 
-Deliverable: with hints on, the game tells you right/wrong + why; with hints off,
-silent play.
+### Shoe & Shuffle
+The shoe widget sits at `SHOE_X=348, SHOE_Y=108` — adjacent to the dealer,
+within the room zone. A **Shuffle** button in the controls triggers
+`manualShuffle()`: rebuilds the shoe, resets the count, and plays a 1200ms
+amber flicker animation on the shoe widget. Auto-shuffle still triggers at
+the configured penetration threshold inside `deal()`.
 
----
+### Blackjack Engine
 
-## 4. Betting, chips & count-based bet spread (Phase 4)
+| Feature | Detail |
+|---|---|
+| Decks | Configurable 1–8 |
+| Dealer rule | H17 or S17 (configurable) |
+| BJ payout | 3:2 / 6:5 / 1:1 |
+| Surrender | Late / None |
+| DAS | On/Off |
+| Re-split | Up to 3× |
+| Split aces | One card each (configurable) |
+| Double | Any two cards (configurable) or 9-10-11 only |
+| Penetration | 50–90% configurable |
+| Dealer peek | US rules — dealer checks for BJ on 10/A; configurable, on by default |
+| Insurance | Offered on dealer Ace; settled correctly in peek and no-peek modes |
 
-- A **bankroll** (starting amount configurable, e.g. 1000 units).
-- **Chips**: clickable pixel chip denominations (e.g. 1 / 5 / 25 / 100) to build a
-  bet before each round; satisfying stack animation when placing/winning.
-- Bet is locked when the round deals; payouts settle to bankroll afterward.
-- **Bet-spread coaching (optional, ties to hints):** since real counting profit
-  comes from betting more at high true counts, optionally show a suggested bet
-  size based on a simple ramp (e.g. bet = base × max(1, trueCount − 1)). When
-  bet-coaching is on and the player's bet deviates a lot from the suggestion at a
-  given count, note it (this is part of becoming a good counter, not just basic
-  strategy).
+### Hi-Lo Counting
+Running count updates as each card is revealed. True count = RC ÷ decks
+remaining (rounded to nearest 0.5, minimum 0.5). Count resets on shuffle.
+Toggle overlay with [C] or the RC button.
 
-Deliverable: full betting loop with chips, bankroll tracking, and optional
-count-based bet suggestions.
+### Strategy Engine
+Tables: `PAIRS`, `SOFT_H17`, `SOFT_S17`, `HARD`, `SURRENDER_H17`, `SURRENDER_S17`.
+Hint engine highlights the recommended action button (★ toggle, hotkey [I]).
+Wrong decisions show a one-line reason. Strategy accuracy tracked per category
+(hard / soft / pairs / surrender).
 
----
+Bet-spread coaching: `suggestedBet = betUnit × max(1, TC−1)`. Shown alongside
+bet amount when hints are on, always (not separately gated).
 
-## 5. Stats tracking — session + all-time + export (Phase 5)
+### Animations
+| Animation | Trigger |
+|---|---|
+| Card slide | Deal, hit, double, split, dealer draw |
+| Card flip | Hole card reveal |
+| Screen shake | Bust |
+| Gold flash | Player blackjack |
+| Chip arc | Win payout |
+| Result banner | End of round (WIN / LOSE / PUSH / BLACKJACK / SURRENDER + amount) |
+| Dealer pose lerp | Dealing, win, lose, idle transitions |
+| Shuffle flicker | Manual or auto-shuffle |
 
-**Logic only. No new visual design in this phase — use whatever UI exists.**
+All animations respect `prefers-reduced-motion` (instant cuts).
 
-Track and display:
+### Sound (procedural, Web Audio API)
+- **Deal:** swept low-pass noise burst + sine thump, staggered per card
+- **Win:** rising warm arpeggio
+- **Lose:** falling minor tone
+- **Blackjack:** distinct bright win sound
+- Mute toggle [M], persistent via settings.
 
-- Hands played, win/loss/push rate, blackjacks hit.
-- **Strategy accuracy:** % of decisions matching basic strategy, broken down by
-  category (hard totals / soft totals / pairs / surrender).
-- **Bankroll delta** for the session (simple number, not a chart — chart comes in
-  Phase 7 if at all).
-- Two scopes: **This session** and **All time**, shown side by side.
-- Buttons: **New session** (resets session stats only), **Reset all** (clears
-  all-time with a confirm dialog), **Export stats** (downloads JSON file),
-  **Import stats** (reads a JSON file back in).
-- All persisted via `localStorage`. Export/import is the user's PC-save mechanism
-  — no server, no cookies, no other storage.
-- Correct/incorrect decisions feed into accuracy from Phase 3's hint engine.
+### Insurance UI
+Plain text: `Insurance? Yes / No` with underlined Y and N.
+Keyboard: [Y] takes insurance, [N] declines. No button styling.
 
-Do NOT add counting-guess prompts or any game-mode logic here. Keep it a passive
-tracker only.
+### Stats
+Session and all-time scopes, side by side. Tracks: hands, win/loss/push,
+blackjacks, strategy accuracy by category, bankroll delta, sparkline.
+Export/import JSON. New session and Reset all buttons.
 
-Deliverable: a stats panel showing session + all-time numbers with working
-export/import. Functional, not pretty.
+### Settings
+All settings persisted to `bj_settings_v1`. Applied immediately (feature
+toggles) or on next deal/shuffle (table rules).
 
----
-
-## 6. Settings panel — table conditions (Phase 6)
-
-**Logic only. No new visual design in this phase — use whatever UI exists.**
-
-All settings persisted in `localStorage`, applied on next shuffle/round:
-
-- Number of decks (1–8).
-- Dealer rule: H17 (hits soft 17) / S17 (stands soft 17). **Must switch which
-  strategy table the hint engine uses.**
-- Double After Split (DAS): on/off. **Affects pair-splitting hints (Y/N cells).**
-- Blackjack payout: 3:2 / 6:5 / 1:1.
-- Surrender: none / late.
-- Re-split limit (1–3×), split aces re-splittable: yes/no.
-- Double rules: any two cards / 9-10-11 only.
-- Penetration: % of shoe dealt before reshuffle (50–90%).
-- Starting bankroll.
-- Feature toggles: count overlay on/off, hint engine on/off, bet-coaching on/off,
-  sound on/off, index deviations on/off.
-
-Deliverable: a settings panel where every option actually changes game and trainer
-behaviour. Functional, not pretty.
-
----
-
-## 7. Full design pass — pixel art, layout, animations, sound (Phase 7)
-
-**This is the only phase that owns visual decisions. Phases 1–6 build no
-permanent UI — Phase 7 redesigns the whole thing from scratch if needed.**
-
-### Visual direction: Jazz Lounge
-
-The target aesthetic is a **gentlemen's jazz lounge, pixel art, circa 1950s**.
-Relaxed, warm, a little smoky. Think: a proper felt table under warm lamplight,
-not a garish Vegas floor. The pixel art should be readable and charming, not
-microscopic noise.
-
-Specific requirements:
-
-- **Full-screen layout.** The game fills the browser window — no boxed island in
-  the middle of a dark void like Phase 1. The table IS the page.
-- **Resolution:** render at a resolution where cards are clearly legible — at
-  minimum 640×360 internal canvas resolution scaled up, or higher. 320×180 was
-  too low. Pixel art yes; unreadable smudge no.
-- **Palette (locked, 6 colours):**
-  - Table felt: `#2D5A3D` (deep forest green)
-  - Table trim/rail: `#8B4513` (warm wood brown)
-  - Card face: `#F5F0E8` (warm off-white)
-  - Card back / UI accent: `#C41E3A` (deep red)
-  - Chip gold: `#D4A017`
-  - Background (room/lounge): `#1A1008` (very dark warm brown — the "room"
-    behind the table)
-- **Cards:** drawn procedurally on canvas. Large enough to read rank and suit
-  clearly. Suits drawn as pixel glyphs (♠ ♥ ♦ ♣). Card back has a simple
-  pixel diamond/cross pattern in the deep red.
-- **Chips:** stacked pixel chips in denominations 1/5/25/100. Warm colours
-  (white/red/green/black with gold edge). Arc animation onto bet spot on click;
-  slide back on win.
-- **Table felt:** a simple pixel-art oval or rounded rectangle felt area. Dealer
-  zone at top, player zone at bottom, bet spot in the middle. Subtle pixel
-  stitching on the rail edge.
-- **Background:** the "room" behind the table — very dark warm brown, optionally
-  a hint of pixel art detail (a lamp, a curtain edge, whatever fits) but keep it
-  subtle. The table is the hero.
-- **Count overlay:** a small warm-toned readout (think: brass nameplate). Colour
-  shifts: cool blue tint when count is negative, warm amber when positive — helps
-  build intuition without text.
-- **Animations:**
-  - Cards slide in from a shoe in the top-right corner, ease in, then flip
-    (scale-x interpolation) to reveal face. Synced with deal sound.
-  - Bust: brief screen-shake.
-  - Blackjack: brief gold flash on the cards.
-  - Chip arc on bet placement.
-  - All animations respect `prefers-reduced-motion` (instant cuts instead).
-- **Sound (Web Audio API, procedural — no external files):**
-  - Deal/flip: short crisp click + soft whoosh
-  - Win: short rising major arpeggio (warm tone)
-  - Lose: short falling minor tone
-  - Master mute toggle always visible.
-- **HUD / controls:**
-  - Action buttons (Hit / Stand / Double / Split / Surrender) sit below the table,
-    clean and readable. Keyboard shortcuts labelled.
-  - Count toggle (C), hint toggle, settings — small, unobtrusive, top corner.
-  - Stats panel accessible via a button, slides in as an overlay (doesn't
-    replace the table view).
-- **Typography:** pixel/bitmap font for all in-game text. Sentence case. Active
-  voice. No decorative copy.
-- **Accessibility floor:** full keyboard control, visible focus ring, mute
-  toggle, reduced-motion support. Usable down to a 1280px wide window.
-
-Deliverable: the finished, satisfying version. This phase may rewrite large parts
-of the rendering code — that is expected and fine.
+### Controls & Keyboard
+| Key | Action |
+|---|---|
+| Space / Enter | Deal / advance round |
+| H | Hit |
+| S | Stand |
+| W | Double down |
+| P | Split |
+| R | Surrender |
+| Y / N | Insurance yes / no |
+| C | Count overlay |
+| I | Hints toggle |
+| M | Mute |
+| T | Stats panel |
+| G | Settings panel |
 
 ---
 
-## Build protocol for the agent
+## Colour Palette
 
-1. Read this whole SPEC and STRATEGY.md fully before writing any code.
-2. Keep logic (engine, counting, strategy, stats) strictly separated from
-   rendering. The engine should never care what the UI looks like.
-3. Implement **one phase at a time, in order**. After finishing a phase:
-   - Verify `index.html` opens and the phase deliverable works correctly.
-   - Write a 2–3 line note of what was built and how to test it.
-   - **STOP and wait for human feedback before the next phase.**
-4. Phases 1–6 are logic phases. Do not make permanent visual design decisions
-   in these phases. Placeholder UI is fine; anything that will be redesigned in
-   Phase 7 should be minimal.
-5. Phase 7 owns all visual decisions. It may rewrite rendering entirely.
-6. Never add network calls, analytics, ads, or external runtime dependencies.
-7. STRATEGY.md tables are authoritative — match cell-for-cell, never assume.
-8. Correctness of blackjack rules and strategy always takes priority over visual
-   flourish. The teaching purpose is non-negotiable.
+| Role | Value |
+|---|---|
+| Felt | `#2D5A3D` |
+| Rail (mahogany) | `#8B4513` |
+| Rail trim (brass) | `#D4A017` |
+| Room / background fallback | `#1A1008` |
+| Card face | `#F5F0E8` |
+| Card back / red suits | `#C41E3A` |
+| Gold accent | `#D4A017` |
+
+---
+
+## What's Next — Open Items
+
+1. **Human dealer sprite.** Replace the procedural brass robot with a pixel-art
+   human dealer. The pose state machine stays; only `drawDealer()` is swapped out.
+   Art direction: 1950s lounge croupier, warm tones, consistent with the background.
+
+2. **Background polish.** The current BG is a single static image. Could eventually
+   animate subtle details (smoke curl, lamp flicker) if it doesn't hurt performance.
+
+3. **Index deviations.** The setting exists and is toggleable, but deviation
+   logic is not yet wired into the hint engine. Illustrative deviations:
+   Fab 4 surrenders, Insurance at TC≥3, 16 vs 10 stand at TC≥0, etc.
+
+4. **Mobile / touch.** The canvas scales responsively but touch targets on the
+   chip bar are 32px circles — acceptable but could be larger on phones.
+
+5. **Sparkline in canvas.** The session bankroll sparkline is a separate HTML
+   canvas in the stats panel. Could be moved to a persistent corner of the main
+   canvas if the stats panel ever goes away.
+
+---
+
+## Non-goals (permanent)
+
+- No server, no accounts, no network.
+- No external libraries or build tools.
+- No monetisation, ads, or tracking of any kind.
+- No fancy 3D card animations or physics — pixel art, flat, readable.
