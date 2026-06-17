@@ -1485,7 +1485,7 @@ function _drawDealerRobot() {
   // Seat the figure so its vest base (~y69) lands just above FELT_TOP.
   // translate_y = FELT_TOP - 2 - 1.7*(69-40) ≈ 139 for FELT_TOP=190.
   ctx.save();
-  ctx.translate(290, 161);
+  ctx.translate(290, 157);
   ctx.scale(1.7, 1.7);
   ctx.translate(-290, -40);
   // Brass automaton croupier in lounge livery — warm bronze + burgundy + gold
@@ -1568,8 +1568,8 @@ function _drawDealerRobot() {
 // Dealer stands behind the long straight edge (top); the rounded edge bulges
 // toward the player (bottom). Foreshortened because the POV looks down at it.
 const TABLE_CX      = 320;   // horizontal center
-const TABLE_TOP_Y   = 212;   // dealer's straight back edge
-const TABLE_BOT_Y   = 352;   // player's rounded front edge (covers chip bar)
+const TABLE_TOP_Y   = 208;   // dealer's straight back edge
+const TABLE_BOT_Y   = 334;   // player's rounded front edge — raised to show apron below
 const TABLE_HALF_W  = 248;   // half-width of the back edge (widest part)
 const TABLE_TOP_BOW = 10;    // back edge bows up slightly toward the dealer
 const FELT_TOP = TABLE_TOP_Y; // compatibility alias for dealer seating
@@ -1595,15 +1595,34 @@ function _tableInsetPath(xi, yi) { return _tablePath(xi, yi); }
 function drawTable() {
   const outer = _tableOuterPath();
 
-  // Drop shadow
+  // Table apron — mahogany side panel, sticks out below the felt front edge
   ctx.save();
-  ctx.translate(0, 5);
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.translate(0, 22);
+  const apG = ctx.createLinearGradient(TABLE_CX, TABLE_TOP_Y, TABLE_CX, TABLE_BOT_Y + 22);
+  apG.addColorStop(0, '#9A4E1A');
+  apG.addColorStop(0.3, '#7A3210');
+  apG.addColorStop(1, '#160600');
+  ctx.fillStyle = apG;
   ctx.fill(outer);
   ctx.restore();
 
-  // Felt fill — radial gradient, brighter near the dealer (top) for the down-angle
-  const grad = ctx.createRadialGradient(TABLE_CX, TABLE_TOP_Y + 40, 20, TABLE_CX, TABLE_TOP_Y + 60, 260);
+  // Narrow highlight lip at the top of the apron (table edge rim)
+  ctx.save();
+  ctx.translate(0, 22);
+  ctx.strokeStyle = '#C07030';
+  ctx.lineWidth = 1.5;
+  ctx.stroke(outer);
+  ctx.restore();
+
+  // Dark drop shadow beneath apron
+  ctx.save();
+  ctx.translate(0, 28);
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fill(outer);
+  ctx.restore();
+
+  // Felt fill
+  const grad = ctx.createRadialGradient(TABLE_CX, TABLE_TOP_Y + 40, 20, TABLE_CX, TABLE_TOP_Y + 60, 250);
   grad.addColorStop(0, '#3A7050');
   grad.addColorStop(0.55, '#2D5A3D');
   grad.addColorStop(1, '#1E3D28');
@@ -1693,24 +1712,33 @@ function drawCard(card, x, y, flipProg) {
   const showFace = flipProg >= 0.5 && card.faceUp;
 
   if (!showFace) {
-    // Card back
-    ctx.fillStyle = '#9A1828';
+    // Elegant art deco card back — midnight navy, gold borders + crosshatch
+    const CB_BG = '#0D1638', CB_GOLD = '#C8962A', CB_FAINT = '#C8962A48';
+    ctx.fillStyle = CB_BG;
     ctx.fillRect(0, 0, CARD_W, CARD_H);
-    ctx.fillStyle = CARD_RED;
-    ctx.fillRect(2, 2, CARD_W-4, CARD_H-4);
-    // Pixel diamond pattern
-    ctx.fillStyle = '#9A1828';
-    for (let dy = 0; dy < CARD_H-4; dy += 8) {
-      for (let dx = 0; dx < CARD_W-4; dx += 8) {
-        if ((Math.floor(dx/4) + Math.floor(dy/4)) % 2 === 0) {
-          ctx.fillRect(2+dx, 2+dy, 4, 4);
-        }
-      }
+    // Diagonal crosshatch (clipped to inner area)
+    ctx.save();
+    ctx.beginPath(); ctx.rect(2, 2, CARD_W - 4, CARD_H - 4); ctx.clip();
+    ctx.strokeStyle = CB_FAINT; ctx.lineWidth = 0.5;
+    for (let d = -CARD_H; d < CARD_W + CARD_H; d += 5) {
+      ctx.beginPath(); ctx.moveTo(d, 0); ctx.lineTo(d + CARD_H, CARD_H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(d + CARD_H, 0); ctx.lineTo(d, CARD_H); ctx.stroke();
     }
-    // Inner border
-    ctx.strokeStyle = '#F5F0E855';
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(3, 3, CARD_W-6, CARD_H-6);
+    ctx.restore();
+    // Outer + inner gold borders
+    ctx.strokeStyle = CB_GOLD; ctx.lineWidth = 1;
+    ctx.strokeRect(1.5, 1.5, CARD_W - 3, CARD_H - 3);
+    ctx.strokeRect(4.5, 4.5, CARD_W - 9, CARD_H - 9);
+    // Central diamond ornament
+    const cmx = CARD_W / 2, cmy = CARD_H / 2;
+    ctx.beginPath();
+    ctx.moveTo(cmx, cmy - 11); ctx.lineTo(cmx + 8, cmy);
+    ctx.lineTo(cmx, cmy + 11); ctx.lineTo(cmx - 8, cmy);
+    ctx.closePath();
+    ctx.strokeStyle = CB_GOLD; ctx.lineWidth = 0.8; ctx.stroke();
+    // Tiny pip at diamond center
+    ctx.fillStyle = CB_GOLD;
+    ctx.fillRect(cmx - 1, cmy - 1, 2, 2);
   } else {
     // Card face
     ctx.fillStyle = CARD_FACE;
@@ -1893,83 +1921,92 @@ function drawBetArea() {
   }
 }
 
-// Canvas chip bar constants
+// Canvas chip constants — chips spread in a U arc along the table front
 const CHIP_BAR_DENOMS = [1, 5, 10, 25, 100];
-const CHIP_BAR_CX = [155, 220, 285, 350, 415];
-const CHIP_BAR_RADIUS = 14;
-const CHIP_BAR_CLEAR_X = 495, CHIP_BAR_CLEAR_W = 60, CHIP_BAR_CLEAR_H = 28;
+const CHIP_BAR_RADIUS = 10;
+const CHIP_BAR_CLEAR_W = 26, CHIP_BAR_CLEAR_H = 11;
 const CHIP_BAR_COLORS = [
-  { bg: '#888888', border: '#cccccc' },
-  { bg: '#8B1A1A', border: '#C41E3A' },
-  { bg: '#0A1A5A', border: '#3060C0' },
-  { bg: '#1A4A1A', border: '#2D5A3D' },
-  { bg: '#1A1008', border: '#D4A017' },
+  { bg: '#727272', border: '#C0C0C0' },
+  { bg: '#8B1A1A', border: '#E03A3A' },
+  { bg: '#0A1A5A', border: '#4878D8' },
+  { bg: '#1A4A1A', border: '#3A8050' },
+  { bg: '#2A1A04', border: '#D4A017' },
 ];
 
-function chipBarY() {
-  return CH - 28; // fixed near canvas bottom; independent of table geometry
+function chipBarY() { return CH - 28; } // legacy — chips now use _chipPositions()
+
+function _chipPositions() {
+  const angles = [30, 60, 90, 120, 150].map(a => a * Math.PI / 180);
+  const acx = TABLE_CX, acy = TABLE_TOP_Y + 32;
+  return angles.map(a => ({
+    x: Math.round(acx + 162 * Math.cos(a)),
+    y: Math.round(acy +  56 * Math.sin(a))
+  }));
+}
+
+function _clearBtnCenter() {
+  return { x: TABLE_CX, y: TABLE_TOP_Y + 96 };
 }
 
 function drawChipBar() {
   const betting = state.phase === PHASE.IDLE || state.phase === PHASE.DONE;
   const cy = chipBarY();
 
-  // BET display above chips
+  const chips = _chipPositions();
+  const clrC  = _clearBtnCenter();
+
+  // BET display — above the chip arc, center of table
   const betAmt = betting ? state.pendingBet : state.bet;
   ctx.fillStyle = betting ? GOLD : '#6B5030';
-  ctx.font = 'bold 11px monospace';
+  ctx.font = 'bold 10px monospace';
   ctx.textAlign = 'center';
   const betLabel = betting ? (betAmt > 0 ? `BET: ${betAmt}` : 'BET: —') : `BET (locked): ${betAmt}`;
-  ctx.fillText(betLabel, 290, cy - 22);
+  ctx.fillText(betLabel, TABLE_CX, chips[2].y - 20);
   ctx.textAlign = 'left';
 
   const alpha = betting ? 1.0 : 0.3;
   ctx.globalAlpha = alpha;
 
-  // Draw each chip circle
+  // Draw each chip with 3D radial highlight + casino edge arcs
   for (let i = 0; i < CHIP_BAR_DENOMS.length; i++) {
-    const cx = CHIP_BAR_CX[i];
-    const col = CHIP_BAR_COLORS[i];
-    ctx.beginPath();
-    ctx.arc(cx, cy, CHIP_BAR_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = col.bg;
-    ctx.fill();
-    ctx.strokeStyle = col.border;
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    const pos = chips[i], col = CHIP_BAR_COLORS[i];
+    const px = pos.x, py = pos.y, r = CHIP_BAR_RADIUS;
+    // Base fill
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2);
+    ctx.fillStyle = col.bg; ctx.fill();
+    // 3D radial highlight
+    const hiG = ctx.createRadialGradient(px - r * 0.3, py - r * 0.35, 0, px, py, r);
+    hiG.addColorStop(0, 'rgba(255,255,255,0.42)');
+    hiG.addColorStop(0.6, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hiG; ctx.fill();
+    // Casino edge hash arcs (top-right + bottom-left quadrant marks)
+    ctx.strokeStyle = col.border; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.arc(px, py, r - 1.2, -0.55, 0.55); ctx.stroke();
+    ctx.beginPath(); ctx.arc(px, py, r - 1.2, Math.PI - 0.55, Math.PI + 0.55); ctx.stroke();
+    // Outer ring
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2);
+    ctx.strokeStyle = col.border; ctx.lineWidth = 1.2; ctx.stroke();
     // Inner ring
-    ctx.beginPath();
-    ctx.arc(cx, cy, CHIP_BAR_RADIUS - 4, 0, Math.PI * 2);
-    ctx.strokeStyle = col.border + '80';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    // Label
+    ctx.beginPath(); ctx.arc(px, py, r - 3.2, 0, Math.PI * 2);
+    ctx.strokeStyle = col.border + 'A0'; ctx.lineWidth = 0.7; ctx.stroke();
+    // Value label
     ctx.fillStyle = '#F5F0E8';
-    ctx.font = `bold ${CHIP_BAR_DENOMS[i] >= 100 ? '7' : '9'}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(CHIP_BAR_DENOMS[i]), cx, cy);
-    ctx.textBaseline = 'alphabetic';
-    ctx.textAlign = 'left';
+    ctx.font = `bold ${CHIP_BAR_DENOMS[i] >= 100 ? '6' : '7'}px monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(CHIP_BAR_DENOMS[i]), px, py);
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
   }
 
-  // Clear button
-  const clx = CHIP_BAR_CLEAR_X - CHIP_BAR_CLEAR_W / 2;
-  const cly = cy - CHIP_BAR_CLEAR_H / 2;
-  ctx.fillStyle = '#2A1808';
-  roundRect(ctx, clx, cly, CHIP_BAR_CLEAR_W, CHIP_BAR_CLEAR_H, 4);
-  ctx.fill();
-  ctx.strokeStyle = '#6B4013';
-  ctx.lineWidth = 1;
-  roundRect(ctx, clx, cly, CHIP_BAR_CLEAR_W, CHIP_BAR_CLEAR_H, 4);
-  ctx.stroke();
-  ctx.fillStyle = '#C8901A';
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('CLEAR', CHIP_BAR_CLEAR_X, cy);
-  ctx.textBaseline = 'alphabetic';
-  ctx.textAlign = 'left';
+  // Small clear button below chip arc
+  const clx = clrC.x - CHIP_BAR_CLEAR_W / 2, cly = clrC.y - CHIP_BAR_CLEAR_H / 2;
+  ctx.fillStyle = '#1A0A04';
+  roundRect(ctx, clx, cly, CHIP_BAR_CLEAR_W, CHIP_BAR_CLEAR_H, 3); ctx.fill();
+  ctx.strokeStyle = '#5A3008'; ctx.lineWidth = 0.8;
+  roundRect(ctx, clx, cly, CHIP_BAR_CLEAR_W, CHIP_BAR_CLEAR_H, 3); ctx.stroke();
+  ctx.fillStyle = '#C8901A'; ctx.font = '7px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('CLR', clrC.x, clrC.y);
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
 
   ctx.globalAlpha = 1.0;
 }
@@ -2230,20 +2267,19 @@ canvas.addEventListener('click', function(e) {
   const my = (e.clientY - rect.top) * scaleY;
   const betting = state.phase === PHASE.IDLE || state.phase === PHASE.DONE;
   if (!betting) return;
-  const cy = chipBarY();
-  // Check each chip circle
+  const chips = _chipPositions();
+  const r2 = CHIP_BAR_RADIUS * CHIP_BAR_RADIUS;
   for (let i = 0; i < CHIP_BAR_DENOMS.length; i++) {
-    const cx = CHIP_BAR_CX[i];
-    const dx = mx - cx, dy = my - cy;
-    if (dx*dx + dy*dy <= CHIP_BAR_RADIUS * CHIP_BAR_RADIUS) {
+    const pos = chips[i];
+    const dx = mx - pos.x, dy = my - pos.y;
+    if (dx * dx + dy * dy <= r2) {
       addChip(CHIP_BAR_DENOMS[i]);
       render(); updateButtons(); syncMsg();
       return;
     }
   }
-  // Check clear button
-  const clx = CHIP_BAR_CLEAR_X - CHIP_BAR_CLEAR_W / 2;
-  const cly = cy - CHIP_BAR_CLEAR_H / 2;
+  const clrC = _clearBtnCenter();
+  const clx = clrC.x - CHIP_BAR_CLEAR_W / 2, cly = clrC.y - CHIP_BAR_CLEAR_H / 2;
   if (mx >= clx && mx <= clx + CHIP_BAR_CLEAR_W && my >= cly && my <= cly + CHIP_BAR_CLEAR_H) {
     clearBet(); render(); updateButtons(); syncMsg();
   }
