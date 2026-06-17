@@ -875,6 +875,7 @@ function deal() {
   queueSlide(d1, SHOE_X, SHOE_Y, d1X, d1Y, STAGGER);
   queueSlide(p2, SHOE_X, SHOE_Y, p2X, p2Y, STAGGER * 2);
   queueSlide(d2, SHOE_X, SHOE_Y, d2X, d2Y, STAGGER * 3);
+  setDealerPoseWith(DEALER_POSE.DEALING, STAGGER * 3 + ANIM_DUR + 300);
   if (d1.rank==='A') { state.phase=PHASE.INSURANCE; setMsg('Dealer shows Ace. Insurance?'); return; }
   checkImmediateBlackjack();
 }
@@ -888,14 +889,14 @@ function checkImmediateBlackjack() {
   if (CONFIG.peek && isBlackjack(state.dealerCards)) {
     revealHole();
     if (state.insuranceBet>0) { state.bankroll+=state.insuranceBet*3; }
-    if (isBlackjack(hand.cards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); triggerBanner('PUSH', '#8888C0'); }
-    else                         { settleHand(hand,'lose'); setMsg('Dealer has blackjack.'); playSound('lose'); triggerBanner('LOSE  -'+hand.bet, '#C04040'); }
+    if (isBlackjack(hand.cards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); triggerBanner('PUSH', '#8888C0'); setDealerPose(DEALER_POSE.IDLE); }
+    else                         { settleHand(hand,'lose'); setMsg('Dealer has blackjack.'); playSound('lose'); triggerBanner('LOSE  -'+hand.bet, '#C04040'); setDealerPoseWith(DEALER_POSE.WIN, 2200); }
     state.phase=PHASE.DONE; finishRound(); return;
   }
   if (isBlackjack(hand.cards)) {
     revealHole();
-    if (isBlackjack(state.dealerCards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); triggerBanner('PUSH', '#8888C0'); }
-    else                                { settleHand(hand,'bj'); setMsg('Blackjack! You win.'); playSound('bj'); triggerBJFlash(); triggerBanner('BLACKJACK  +'+hand.payout, GOLD); }
+    if (isBlackjack(state.dealerCards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); triggerBanner('PUSH', '#8888C0'); setDealerPose(DEALER_POSE.IDLE); }
+    else                                { settleHand(hand,'bj'); setMsg('Blackjack! You win.'); playSound('bj'); triggerBJFlash(); triggerBanner('BLACKJACK  +'+hand.payout, GOLD); setDealerPoseWith(DEALER_POSE.LOSE, 2200); }
     state.phase=PHASE.DONE; finishRound(); return;
   }
   state.phase=PHASE.PLAYER;
@@ -1019,6 +1020,10 @@ function settleAll() {
     else if (net<0)      { bt='LOSE  '+net;          bc='#C04040'; }
     else                 { bt='PUSH';                bc='#8888C0'; }
     triggerBanner(bt, bc);
+    // Dealer pose: dealer wins if player loses, loses if player wins
+    if (net>0)       setDealerPoseWith(DEALER_POSE.LOSE, 2200);
+    else if (net<0)  setDealerPoseWith(DEALER_POSE.WIN,  2200);
+    else             setDealerPose(DEALER_POSE.IDLE);
   }
   // Play outcome sounds (one sound total) + payout animations
   const hasWin = state.hands.some(h=>h.result==='win'||h.result==='bj');
@@ -1066,7 +1071,7 @@ let bannerAnim  = null; // {text, color, t0, fadein, hold, fadeout}
 
 function queuePayoutAnim(amount) {
   if (REDUCED || amount <= 0) return;
-  payoutAnims.push({ amount, sx: 290, sy: 88, tx: 242, ty: 185, t0: performance.now()+350, dur: 520 });
+  payoutAnims.push({ amount, sx: 290, sy: 118, tx: 242, ty: 185, t0: performance.now()+350, dur: 520 });
   scheduleRender();
 }
 
@@ -1077,7 +1082,7 @@ function scheduleRender() {
 function renderFrame() {
   rafId = null;
   render();
-  if (slideAnims.size > 0 || flipAnims.size > 0 || shakeAnim || flashAnim || bannerAnim || payoutAnims.length > 0) scheduleRender();
+  if (slideAnims.size > 0 || flipAnims.size > 0 || shakeAnim || flashAnim || bannerAnim || payoutAnims.length > 0 || dealerPoseAnim) scheduleRender();
 }
 
 // Check prefers-reduced-motion
@@ -1231,8 +1236,8 @@ const ctx = canvas.getContext('2d');
 
 const CW = 640, CH = 360;
 const CARD_W = 52, CARD_H = 72, CARD_STEP = 58;
-const DEALER_Y = 22, PLAYER_Y = 205;
-const SHOE_X = 573, SHOE_Y = 18;
+const DEALER_Y = 82, PLAYER_Y = 225;
+const SHOE_X = 573, SHOE_Y = 82;
 const FELT = '#2D5A3D', RAIL = '#8B4513', ROOM = '#1A1008';
 const CARD_FACE = '#F5F0E8', CARD_RED = '#C41E3A', GOLD = '#D4A017';
 
@@ -1250,71 +1255,206 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function drawTable() {
-  // Fill canvas with room color
-  ctx.fillStyle = ROOM;
-  ctx.fillRect(0, 0, CW, CH);
+// ─── BACKGROUND IMAGE ────────────────────────────────────────────────────────
 
-  // Felt oval
-  roundRect(ctx, 18, 8, 604, 344, 45);
+const BG_SRC = ''; // paste base64 data-URI here when user provides image
+let bgImage = null;
+(function() {
+  if (!BG_SRC) return;
+  const img = new Image();
+  img.onload = () => { bgImage = img; render(); };
+  img.src = BG_SRC;
+})();
+
+function drawBackground() {
+  if (bgImage) {
+    ctx.drawImage(bgImage, 0, 0, CW, CH);
+  } else {
+    ctx.fillStyle = ROOM;
+    ctx.fillRect(0, 0, CW, CH);
+  }
+}
+
+// ─── DEALER FIGURE ───────────────────────────────────────────────────────────
+
+const DEALER_POSE = { IDLE:'idle', DEALING:'dealing', WIN:'win', LOSE:'lose' };
+let dealerPose = DEALER_POSE.IDLE;
+let dealerPoseAnim = null; // { from, to, t0, dur }
+let _poseTimer = 0;
+
+function setDealerPose(to, dur=300) {
+  dealerPoseAnim = { from: dealerPose, to, t0: performance.now(), dur };
+  dealerPose = to;
+  scheduleRender();
+}
+function setDealerPoseWith(to, returnAfter, dur=300) {
+  const tok = ++_poseTimer;
+  setDealerPose(to, dur);
+  if (returnAfter > 0) setTimeout(() => { if (_poseTimer === tok) setDealerPose(DEALER_POSE.IDLE); }, returnAfter);
+}
+
+const POSE_ARMS = {
+  idle:    { L: -22, R:  22 },
+  dealing: { L:  12, R: -44 },
+  win:     { L: -58, R:  58 },
+  lose:    { L:  -4, R:   4 },
+};
+const POSE_EYE = {
+  idle:    '#D4A017',
+  dealing: '#6ADFDF',
+  win:     '#C04040',
+  lose:    '#60C060',
+};
+
+function _lerp(a, b, t) { return a + (b - a) * t; }
+function _ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+function _getPoseArms() {
+  if (!dealerPoseAnim) return POSE_ARMS[dealerPose] || POSE_ARMS.idle;
+  const now = performance.now();
+  const raw = Math.min(1, (now - dealerPoseAnim.t0) / dealerPoseAnim.dur);
+  const t = _ease(raw);
+  const from = POSE_ARMS[dealerPoseAnim.from] || POSE_ARMS.idle;
+  const to   = POSE_ARMS[dealerPoseAnim.to]   || POSE_ARMS.idle;
+  if (raw >= 1) dealerPoseAnim = null;
+  return { L: _lerp(from.L, to.L, t), R: _lerp(from.R, to.R, t) };
+}
+function _getPoseEye() {
+  if (!dealerPoseAnim) return POSE_EYE[dealerPose] || POSE_EYE.idle;
+  const now = performance.now();
+  const raw = Math.min(1, (now - dealerPoseAnim.t0) / dealerPoseAnim.dur);
+  return raw >= 0.5 ? (POSE_EYE[dealerPoseAnim.to] || POSE_EYE.idle) : (POSE_EYE[dealerPoseAnim.from] || POSE_EYE.idle);
+}
+
+function _drawArm(rx, ry, angleDeg, col) {
+  const rad = angleDeg * Math.PI / 180;
+  const ex = rx + Math.sin(rad) * 26, ey = ry + Math.cos(rad) * 26;
+  ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(ex, ey);
+  ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(ex, ey, 3, 0, Math.PI*2);
+  ctx.fillStyle = col; ctx.fill();
+}
+
+function drawDealer() {
+  const cx = 290;
+  const arms = _getPoseArms();
+  const eyeCol = _getPoseEye();
+  const bodyCol = '#1A1C2E', borderCol = '#4A4A7A', armCol = '#2A2A4A';
+
+  // Body
+  ctx.fillStyle = bodyCol;
+  roundRect(ctx, cx-21, 43, 42, 24, 4); ctx.fill();
+  ctx.strokeStyle = borderCol; ctx.lineWidth = 1.5;
+  roundRect(ctx, cx-21, 43, 42, 24, 4); ctx.stroke();
+  // Gold collar
+  ctx.strokeStyle = GOLD; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx-18, 46); ctx.lineTo(cx+18, 46); ctx.stroke();
+  // Circuit lines
+  ctx.strokeStyle = '#3A3A5A'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx-14, 54); ctx.lineTo(cx+14, 54); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-10, 61); ctx.lineTo(cx+10, 61); ctx.stroke();
+
+  // Arms (drawn before head so head sits on top)
+  _drawArm(cx-18, 50, arms.L, armCol);
+  _drawArm(cx+18, 50, arms.R, armCol);
+
+  // Neck
+  ctx.fillStyle = '#141420'; ctx.fillRect(cx-4, 35, 8, 9);
+
+  // Head
+  ctx.fillStyle = bodyCol;
+  roundRect(ctx, cx-13, 12, 26, 24, 5); ctx.fill();
+  ctx.strokeStyle = borderCol; ctx.lineWidth = 1.5;
+  roundRect(ctx, cx-13, 12, 26, 24, 5); ctx.stroke();
+
+  // Eyes with glow
+  ctx.fillStyle = eyeCol;
+  ctx.fillRect(cx-10, 20, 5, 5);
+  ctx.fillRect(cx+5,  20, 5, 5);
+  ctx.shadowColor = eyeCol; ctx.shadowBlur = 5;
+  ctx.fillRect(cx-10, 20, 5, 5);
+  ctx.fillRect(cx+5,  20, 5, 5);
+  ctx.shadowBlur = 0;
+
+  // Antenna
+  ctx.strokeStyle = borderCol; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx, 12); ctx.lineTo(cx, 7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, 6, 2.5, 0, Math.PI*2);
+  ctx.fillStyle = GOLD; ctx.fill();
+}
+
+function drawTable() {
+  // Felt oval — starts at Y=75, leaving a room band above for the dealer
+  roundRect(ctx, 18, 75, 604, 275, 45);
   ctx.fillStyle = FELT;
   ctx.fill();
 
   // Rail border
-  roundRect(ctx, 18, 8, 604, 344, 45);
+  roundRect(ctx, 18, 75, 604, 275, 45);
   ctx.strokeStyle = RAIL;
   ctx.lineWidth = 10;
   ctx.stroke();
 
   // Inner rail highlight
-  roundRect(ctx, 23, 13, 594, 334, 41);
+  roundRect(ctx, 23, 80, 594, 265, 41);
   ctx.strokeStyle = '#A05C1E';
   ctx.lineWidth = 2;
   ctx.stroke();
 
   // Felt stitching (dashed)
-  roundRect(ctx, 32, 22, 576, 316, 36);
+  roundRect(ctx, 32, 89, 576, 247, 36);
   ctx.strokeStyle = '#254830';
   ctx.lineWidth = 0.5;
   ctx.setLineDash([5, 5]);
   ctx.stroke();
   ctx.setLineDash([]);
 
+  // Lamplight vignette — warm center, dark corners
+  const vg = ctx.createRadialGradient(290, 215, 45, 290, 215, 295);
+  vg.addColorStop(0,   'rgba(255,175,55,0.00)');
+  vg.addColorStop(0.5, 'rgba(255,175,55,0.00)');
+  vg.addColorStop(1,   'rgba(0,0,0,0.44)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(18, 75, 604, 275);
+
+  // Center arc decoration between dealer and player zones
+  ctx.beginPath();
+  ctx.arc(290, 165, 115, Math.PI * 0.12, Math.PI * 0.88);
+  ctx.strokeStyle = '#254830';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 6]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
   // Shoe widget — 4 stacked card backs
   for (let i = 3; i >= 0; i--) {
     const sx = SHOE_X + i*2, sy = SHOE_Y + i*2;
-    // Card back
     ctx.fillStyle = '#9A1828';
     ctx.fillRect(sx, sy, 54, 74);
     ctx.fillStyle = CARD_RED;
     ctx.fillRect(sx+2, sy+2, 50, 70);
-    // Small diamond pattern on back
     ctx.fillStyle = '#9A1828';
     for (let dy = 0; dy < 70; dy += 8) {
       for (let dx = 0; dx < 50; dx += 8) {
-        if ((dx/8 + dy/8) % 2 === 0) {
-          ctx.fillRect(sx+2+dx, sy+2+dy, 4, 4);
-        }
+        if ((dx/8 + dy/8) % 2 === 0) ctx.fillRect(sx+2+dx, sy+2+dy, 4, 4);
       }
     }
-    // Border
     ctx.strokeStyle = '#F5F0E888';
     ctx.lineWidth = 0.5;
     ctx.strokeRect(sx+2, sy+2, 50, 70);
   }
-  // Shoe label
   ctx.fillStyle = '#F5F0E860';
   ctx.font = 'bold 7px monospace';
   ctx.fillText('SHOE', SHOE_X + 8, SHOE_Y + 82);
 
-  // DEALER label
-  ctx.fillStyle = '#1A4A2A';
+  // DEALER label (room zone — warm color for dark bg)
+  ctx.fillStyle = '#C4A868';
   ctx.font = 'bold 9px monospace';
   ctx.fillText('DEALER', 38, 38);
 
-  // Subtle arc under dealer zone
+  // Shadow arc at top felt edge
   ctx.beginPath();
-  ctx.ellipse(290, 80, 180, 25, 0, 0, Math.PI * 2);
+  ctx.ellipse(290, 130, 175, 18, 0, 0, Math.PI * 2);
   ctx.strokeStyle = 'rgba(0,0,0,0.18)';
   ctx.lineWidth = 1;
   ctx.stroke();
@@ -1322,7 +1462,7 @@ function drawTable() {
   // PLAYER label
   ctx.fillStyle = '#1A4A2A';
   ctx.font = 'bold 9px monospace';
-  ctx.fillText('PLAYER', 38, 280);
+  ctx.fillText('PLAYER', 38, 218);
 
   // Bankroll display bottom-left
   ctx.fillStyle = GOLD;
@@ -1506,7 +1646,7 @@ function drawChipStack(x, y, amount) {
 function drawBetArea() {
   const betAmt = (state.phase === PHASE.IDLE || state.phase === PHASE.DONE) ? state.pendingBet : state.bet;
   const locked = !(state.phase === PHASE.IDLE || state.phase === PHASE.DONE);
-  const bx = 220, by = 148, bw = 140, bh = 50;
+  const bx = 220, by = 156, bw = 140, bh = 50;
 
   // Background box
   ctx.fillStyle = 'rgba(10,8,0,0.70)';
@@ -1603,7 +1743,9 @@ function render() {
     }
   }
 
+  drawBackground();
   drawTable();
+  drawDealer();
 
   // Dealer hand
   if (state.dealerCards.length > 0) {
