@@ -1,4 +1,4 @@
-# SPEC.md — Blackjack Card Counting Trainer
+# SPEC.md — Valencian: Blackjack Card Counting Trainer
 
 A single-file, offline, browser-based blackjack trainer built to teach **Hi-Lo
 card counting** and **perfect basic strategy** through real play. No ads, no
