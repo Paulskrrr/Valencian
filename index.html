@@ -1305,12 +1305,39 @@ function drawBackground() {
   }
 }
 
+// ─── DEALER SPRITE ASSETS ────────────────────────────────────────────────────
+// Fill each with a base64 data-URI (PNG with transparent background) when art
+// is ready. Empty string = fall back to the procedural robot.
+
+const DEALER_IDLE_SRC    = '';
+const DEALER_DEALING_SRC = '';
+const DEALER_WIN_SRC     = '';
+const DEALER_LOSE_SRC    = '';
+const DEALER_BLINK_SRC   = ''; // optional — eyes-closed variant for idle blink
+
+function _loadSrc(src) {
+  if (!src) return null;
+  const img = new Image();
+  img.onload = () => scheduleRender();
+  img.src = src;
+  return img;
+}
+const DEALER_IMGS = {
+  idle:    _loadSrc(DEALER_IDLE_SRC),
+  dealing: _loadSrc(DEALER_DEALING_SRC),
+  win:     _loadSrc(DEALER_WIN_SRC),
+  lose:    _loadSrc(DEALER_LOSE_SRC),
+  blink:   _loadSrc(DEALER_BLINK_SRC),
+};
+
 // ─── DEALER FIGURE ───────────────────────────────────────────────────────────
 
 const DEALER_POSE = { IDLE:'idle', DEALING:'dealing', WIN:'win', LOSE:'lose' };
 let dealerPose = DEALER_POSE.IDLE;
 let dealerPoseAnim = null; // { from, to, t0, dur }
 let _poseTimer = 0;
+let _blinkActive = false;
+let _blinkNext   = 0; // performance.now() timestamp for next blink
 
 function setDealerPose(to, dur=300) {
   dealerPoseAnim = { from: dealerPose, to, t0: performance.now(), dur };
@@ -1368,6 +1395,60 @@ function _drawArm(rx, ry, angleDeg, col, jointCol) {
 }
 
 function drawDealer() {
+  if (DEALER_IMGS.idle) {
+    _drawDealerSprite();
+  } else {
+    _drawDealerRobot();
+  }
+}
+
+// Sprite renderer — active when DEALER_IDLE_SRC is populated.
+function _drawDealerSprite() {
+  const now = performance.now();
+  const reduced = REDUCED; // reuse the existing prefers-reduced-motion flag
+
+  // Pose -> image: hard-swap at tween midpoint (same timing as _getPoseEye)
+  function _currentDealerImg() {
+    let pose = dealerPose;
+    if (dealerPoseAnim) {
+      const raw = Math.min(1, (now - dealerPoseAnim.t0) / dealerPoseAnim.dur);
+      pose = raw >= 0.5 ? dealerPoseAnim.to : dealerPoseAnim.from;
+    }
+    return DEALER_IMGS[pose] || DEALER_IMGS.idle;
+  }
+
+  // Blink logic — only while idle, only when blink frame exists
+  if (!reduced && dealerPose === DEALER_POSE.IDLE && DEALER_IMGS.blink) {
+    if (!_blinkActive && now >= _blinkNext) {
+      _blinkActive = true;
+      _blinkNext = now + 2500 + Math.random() * 3500;
+      setTimeout(() => { _blinkActive = false; scheduleRender(); }, 110);
+    }
+  }
+  const img = (_blinkActive && DEALER_IMGS.blink) ? DEALER_IMGS.blink : _currentDealerImg();
+
+  // Idle micro-animation: pause during action poses so motion doesn't fight the pose
+  const inAction = dealerPose !== DEALER_POSE.IDLE;
+  const breathY = (!reduced && !inAction) ? Math.sin(now * 0.0018) * 1.5 : 0;
+  const swayX   = (!reduced && !inAction) ? Math.sin(now * 0.0011) * 0.8 : 0;
+
+  // Same anchor transform as the robot: centre x~290, base meets FELT_TOP
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.translate(290 + swayX, 99 + breathY);
+  ctx.scale(1.7, 1.7);
+  ctx.translate(-290, -40);
+  // Draw the image with its bottom edge at the figure base (y=40 in sprite-space).
+  // The sprite should be supplied with the figure's base at its bottom pixel.
+  ctx.drawImage(img, 290 - img.naturalWidth / 2, 40 - img.naturalHeight);
+  ctx.restore();
+
+  // Keep the render loop alive for continuous idle animation
+  if (!reduced) scheduleRender();
+}
+
+// Fallback robot — original procedural figure, unchanged.
+function _drawDealerRobot() {
   const cx = 290;
   const arms = _getPoseArms();
   const eyeCol = _getPoseEye();
