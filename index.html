@@ -53,7 +53,7 @@
   /* ── message + insurance — overlaid at bottom of canvas ── */
   #message {
     position: absolute;
-    bottom: 38px;
+    top: 57%;
     left: 0; right: 0;
     color: #D4A017;
     text-align: center;
@@ -66,7 +66,7 @@
   /* ── insurance bar ── */
   #insurance-bar {
     position: absolute;
-    bottom: 38px;
+    top: 57%;
     left: 50%; transform: translateX(-50%);
     display: none; gap: 10px;
     justify-content: center; align-items: center;
@@ -332,6 +332,7 @@
     <label>Sound <input type="checkbox" id="s-sound"></label>
     <label>Index deviations <input type="checkbox" id="s-devs"></label>
     <label>Dealer peek / US rules <input type="checkbox" id="s-peek"></label>
+    <label>Auto-deal <input type="checkbox" id="s-autodeal"></label>
   </div>
   <div id="sett-actions">
     <button id="btn-sett-apply">Apply &amp; Close</button>
@@ -745,6 +746,7 @@ function populateSettings() {
   s('s-sound').checked  = CONFIG.soundEnabled;
   s('s-devs').checked   = CONFIG.indexDeviations;
   s('s-peek').checked   = CONFIG.peek;
+  s('s-autodeal').checked = CONFIG.autoDeal;
 }
 
 function applySettings() {
@@ -764,6 +766,7 @@ function applySettings() {
   CONFIG.soundEnabled     = s('s-sound').checked;
   CONFIG.indexDeviations  = s('s-devs').checked;
   CONFIG.peek             = s('s-peek').checked;
+  CONFIG.autoDeal         = s('s-autodeal').checked;
   if (prevDecks !== CONFIG.numDecks) { shoe = new Shoe(CONFIG.numDecks); count.reset(); }
   saveSettings();
   closeSettings();
@@ -793,7 +796,7 @@ const CONFIG = {
   numDecks: 6, penetration: 0.75, h17: false, bjPayout: 1.5,
   surrender: 'none', das: false, resplitMax: 1, splitAcesOneCard: true,
   doubleAnyTwo: true, betUnit: 10, startingBankroll: 1000,
-  soundEnabled: true, indexDeviations: false, peek: false,
+  soundEnabled: true, indexDeviations: false, peek: false, autoDeal: false,
   dealerChar: 0,
 };
 
@@ -1069,7 +1072,7 @@ function settleHand(hand, result) {
   else if(result==='push') { hand.payout=0; }
   else if(result==='surrender') { const l=Math.floor(hand.bet/2); hand.payout=-l; state.bankroll-=l; }
 }
-function finishRound() { state.phase=PHASE.DONE; render(); updateButtons(); }
+function finishRound() { state.phase=PHASE.DONE; render(); updateButtons(); if (CONFIG.autoDeal) setTimeout(deal, 1400); }
 function setMsg(m,wrong=false) { state.message=m; state.messageWrong=wrong; }
 
 function manualShuffle() {
@@ -2152,7 +2155,7 @@ function render() {
 
   // Dealer hand
   if (state.dealerCards.length > 0) {
-    drawHand(state.dealerCards, DEALER_Y, 290, 'DEALER', false, null);
+    drawHand(state.dealerCards, DEALER_Y, 290, '', false, null);
   }
 
   // Player hands
