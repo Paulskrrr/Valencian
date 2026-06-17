@@ -1394,24 +1394,29 @@ function _makeDealer2BlinkCanvas(idleCanvas) {
   bc.width = w; bc.height = h;
   const bx = bc.getContext('2d');
   bx.drawImage(idleCanvas, 0, 0);
+  // Sample skin tone from cheek (reliably skin, below the eyes)
   const imgData = bx.getImageData(0, 0, w, h);
   const d = imgData.data;
-  const sX = Math.round(w * 0.50), sY = Math.round(h * 0.30);
+  const sX = Math.round(w * 0.45), sY = Math.round(h * 0.37);
   const si = (sY * w + sX) * 4;
   const skinR = d[si], skinG = d[si+1], skinB = d[si+2];
+  // Eye centres measured from the source art (almond-shaped, wide not tall)
   const eyes = [
-    { cx: Math.round(w * 0.335), cy: Math.round(h * 0.415), rx: Math.round(w * 0.072), ry: Math.round(h * 0.035) },
-    { cx: Math.round(w * 0.510), cy: Math.round(h * 0.415), rx: Math.round(w * 0.072), ry: Math.round(h * 0.035) },
+    { cx: w * 0.430, cy: h * 0.270, rx: w * 0.034, ry: h * 0.017 },
+    { cx: w * 0.561, cy: h * 0.270, rx: w * 0.034, ry: h * 0.017 },
   ];
   bx.fillStyle = `rgb(${skinR},${skinG},${skinB})`;
   for (const e of eyes) {
+    // Skin lid covering the open eye
     bx.beginPath();
     bx.ellipse(e.cx, e.cy, e.rx, e.ry, 0, 0, Math.PI * 2);
     bx.fill();
-    bx.strokeStyle = '#1A0800';
-    bx.lineWidth = Math.max(1, Math.round(h * 0.008));
+    // Closed-lash line across the eye centre — slight downward curve
+    bx.strokeStyle = '#2A1208';
+    bx.lineWidth = Math.max(1, Math.round(h * 0.006));
     bx.beginPath();
-    bx.ellipse(e.cx, e.cy + e.ry * 0.1, e.rx, e.ry * 0.65, 0, Math.PI, 0, false);
+    bx.moveTo(e.cx - e.rx, e.cy);
+    bx.quadraticCurveTo(e.cx, e.cy + e.ry * 0.7, e.cx + e.rx, e.cy);
     bx.stroke();
   }
   return bc;
