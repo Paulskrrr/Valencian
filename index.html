@@ -1431,10 +1431,10 @@ function _drawDealerSprite() {
   const breathY = (!reduced && !inAction) ? Math.sin(now * 0.0018) * 1.5 : 0;
   const swayX   = (!reduced && !inAction) ? Math.sin(now * 0.0011) * 0.8 : 0;
 
-  // Same anchor transform as the robot: centre x~290, base meets FELT_TOP
+  // Same anchor as robot: translate_y=139 seats figure base at FELT_TOP.
   ctx.save();
   ctx.imageSmoothingEnabled = false;
-  ctx.translate(290 + swayX, 99 + breathY);
+  ctx.translate(290 + swayX, 139 + breathY);
   ctx.scale(1.7, 1.7);
   ctx.translate(-290, -40);
   // Draw the image with its bottom edge at the figure base (y=40 in sprite-space).
@@ -1451,11 +1451,10 @@ function _drawDealerRobot() {
   const cx = 290;
   const arms = _getPoseArms();
   const eyeCol = _getPoseEye();
-  // Seat the figure in the room band so its base meets the felt's top edge.
-  // Maps the figure's natural centre (~290,40) to (290,99) at 1.7× scale,
-  // so the vest base (~y69) lands at ~148, just above FELT_TOP (150).
+  // Seat the figure so its vest base (~y69) lands just above FELT_TOP.
+  // translate_y = FELT_TOP - 2 - 1.7*(69-40) ≈ 139 for FELT_TOP=190.
   ctx.save();
-  ctx.translate(290, 99);
+  ctx.translate(290, 139);
   ctx.scale(1.7, 1.7);
   ctx.translate(-290, -40);
   // Brass automaton croupier in lounge livery — warm bronze + burgundy + gold
@@ -1535,7 +1534,7 @@ function _drawDealerRobot() {
 }
 
 // Felt geometry — table occupies the lower ~60% of the screen
-const FELT_TOP = 150, FELT_H = 178;
+const FELT_TOP = 190, FELT_H = 200;
 
 function drawTable() {
   // Felt oval
@@ -1843,7 +1842,7 @@ const CHIP_BAR_COLORS = [
 ];
 
 function chipBarY() {
-  return FELT_TOP + FELT_H - 22;
+  return CH - 28; // fixed near canvas bottom; independent of FELT_H which extends off-screen
 }
 
 function drawChipBar() {
