@@ -1832,7 +1832,8 @@ function drawChipBar() {
 
 function drawCountOverlay() {
   const tc = count.trueCount(), rc = count.running;
-  const bx = 28, by = CH - 52, bw = 90, bh = 34;
+  const pen = shoe.penetration; // 0–1
+  const bx = 28, by = CH - 64, bw = 90, bh = 50;
 
   ctx.fillStyle = 'rgba(30,20,10,0.92)';
   ctx.fillRect(bx, by, bw, bh);
@@ -1844,14 +1845,26 @@ function drawCountOverlay() {
   ctx.lineWidth = 1;
   ctx.strokeRect(bx, by, bw, bh);
 
+  ctx.font = '9px monospace';
   const s1 = rc >= 0 ? '+' : '';
   const s2 = tc >= 0 ? '+' : '';
   ctx.fillStyle = '#D4B888';
-  ctx.font = '9px monospace';
   ctx.fillText(`RC  ${s1}${rc}`, bx + 6, by + 13);
   const tcCol = tc < 0 ? '#6090D0' : tc > 0 ? '#F0B030' : '#90B070';
   ctx.fillStyle = tcCol;
   ctx.fillText(`TC  ${s2}${tc.toFixed(1)}`, bx + 6, by + 26);
+
+  // Shoe consumption — warm amber as penetration rises
+  const penPct = Math.round(pen * 100);
+  const penCol = pen >= 0.75 ? '#C07840' : pen >= 0.5 ? '#A09050' : '#708060';
+  ctx.fillStyle = penCol;
+  ctx.fillText(`SHO ${penPct}%`, bx + 6, by + 39);
+  // Progress bar
+  const bpx = bx + 5, bpy = by + 44, bpw = bw - 10, bph = 2;
+  ctx.fillStyle = '#2A1A0A';
+  ctx.fillRect(bpx, bpy, bpw, bph);
+  ctx.fillStyle = penCol;
+  ctx.fillRect(bpx, bpy, Math.round(bpw * pen), bph);
 }
 
 function drawHintLabel() {
