@@ -101,7 +101,7 @@
     justify-content: center;
   }
   button {
-    font-family: monospace; font-size: 0.9rem; padding: 8px 16px;
+    font-family: monospace; font-size: 0.82rem; padding: 6px 12px;
     background: #1A2A1A; border: 2px solid #2D5A3D; color: #D4A017;
     cursor: pointer; min-width: 80px; position: relative;
   }
@@ -211,12 +211,13 @@
 </div>
 <div id="message">Place your bet and deal.</div>
 <div id="insurance-bar">
-  <span style="color:#D4A017">Insurance?</span>
-  <button id="btn-ins-yes">Take</button>
-  <button id="btn-ins-no">Decline</button>
-  <span id="ins-hint" style="font-size:0.75rem;color:#a080a0;display:none">[Strategy: always decline]</span>
+  <span style="color:#D4A017">Insurance? &nbsp;</span>
+  <span id="btn-ins-yes" style="color:#D4A017;cursor:pointer" onclick="takeInsurance()"><u>Y</u>es</span>
+  <span style="color:#8B6A3A"> / </span>
+  <span id="btn-ins-no" style="color:#D4A017;cursor:pointer" onclick="declineInsurance()"><u>N</u>o</span>
+  <span id="ins-hint" style="font-size:0.75rem;color:#a080a0">&nbsp;[always decline]</span>
 </div>
-<div id="bet-controls">
+<div id="bet-controls" style="display:none">
   <span style="color:#8B6A3A;font-size:0.8rem">BET:</span>
   <button id="chip-1"   class="chip chip-1">1</button>
   <button id="chip-5"   class="chip chip-5">5</button>
@@ -232,6 +233,7 @@
   <button id="btn-double"    disabled>Double [W]</button>
   <button id="btn-split"     disabled>Split [P]</button>
   <button id="btn-surrender" disabled>Surrender [R]</button>
+  <button id="btn-shuffle" disabled>Shuffle</button>
 </div>
 
 <!-- stats panel -->
@@ -1056,6 +1058,20 @@ function settleHand(hand, result) {
 function finishRound() { state.phase=PHASE.DONE; render(); updateButtons(); }
 function setMsg(m,wrong=false) { state.message=m; state.messageWrong=wrong; }
 
+function manualShuffle() {
+  if (state.phase !== PHASE.IDLE && state.phase !== PHASE.DONE) return;
+  shoe.build();
+  count.reset();
+  setMsg('Shuffled.');
+  if (!REDUCED) {
+    shuffleAnim = { t0: performance.now(), dur: 1200 };
+    scheduleRender();
+    setTimeout(() => { shuffleAnim = null; render(); }, 1200);
+  }
+  updateButtons();
+  syncMsg();
+}
+
 // ─── ANIMATION SYSTEM ────────────────────────────────────────────────────────
 
 // Card slide animations: Map<cardObj, {x0,y0,x1,y1,t0,dur}>
@@ -1068,10 +1084,11 @@ let flashAnim = null;   // {t0, dur, color}
 
 let payoutAnims = []; // [{amount, sx, sy, tx, ty, t0, dur}]
 let bannerAnim  = null; // {text, color, t0, fadein, hold, fadeout}
+let shuffleAnim = null; // {t0, dur}
 
 function queuePayoutAnim(amount) {
   if (REDUCED || amount <= 0) return;
-  payoutAnims.push({ amount, sx: 290, sy: 170, tx: 246, ty: 252, t0: performance.now()+350, dur: 520 });
+  payoutAnims.push({ amount, sx: 290, sy: 170, tx: 246, ty: 270, t0: performance.now()+350, dur: 520 });
   scheduleRender();
 }
 
@@ -1082,7 +1099,7 @@ function scheduleRender() {
 function renderFrame() {
   rafId = null;
   render();
-  if (slideAnims.size > 0 || flipAnims.size > 0 || shakeAnim || flashAnim || bannerAnim || payoutAnims.length > 0 || dealerPoseAnim) scheduleRender();
+  if (slideAnims.size > 0 || flipAnims.size > 0 || shakeAnim || flashAnim || bannerAnim || payoutAnims.length > 0 || dealerPoseAnim || shuffleAnim) scheduleRender();
 }
 
 // Check prefers-reduced-motion
@@ -1236,8 +1253,8 @@ const ctx = canvas.getContext('2d');
 
 const CW = 640, CH = 360;
 const CARD_W = 52, CARD_H = 72, CARD_STEP = 58;
-const DEALER_Y = 156, PLAYER_Y = 278;
-const SHOE_X = 575, SHOE_Y = 150;
+const DEALER_Y = 156, PLAYER_Y = 296;
+const SHOE_X = 348, SHOE_Y = 108;
 const FELT = '#2D5A3D', RAIL = '#8B4513', ROOM = '#1A1008';
 const CARD_FACE = '#F5F0E8', CARD_RED = '#C41E3A', GOLD = '#D4A017';
 
@@ -1424,7 +1441,7 @@ function drawDealer() {
 }
 
 // Felt geometry — table occupies the lower ~60% of the screen
-const FELT_TOP = 140, FELT_H = 216; // 140 → 356
+const FELT_TOP = 178, FELT_H = 216; // 178 → 394
 
 function drawTable() {
   // Felt oval
@@ -1490,6 +1507,22 @@ function drawTable() {
   ctx.fillStyle = '#F5F0E860';
   ctx.font = 'bold 7px monospace';
   ctx.fillText('SHOE', SHOE_X + 8, SHOE_Y + 82);
+
+  // Shuffle animation glow
+  if (shuffleAnim) {
+    const elapsed = performance.now() - shuffleAnim.t0;
+    const flicker = Math.floor(elapsed / 80) % 2;
+    ctx.strokeStyle = flicker === 0 ? '#D4A017' : '#FFD060';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(SHOE_X - 2, SHOE_Y - 2, 62, 82);
+    ctx.fillStyle = (flicker === 0 ? '#D4A017' : '#FFD060') + '22';
+    ctx.fillRect(SHOE_X - 2, SHOE_Y - 2, 62, 82);
+    ctx.fillStyle = flicker === 0 ? '#D4A017' : '#FFD060';
+    ctx.font = 'bold 7px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SHUFFLING...', SHOE_X + 29, SHOE_Y + 94);
+    ctx.textAlign = 'left';
+  }
 
   // Shadow arc at top felt edge (under the dealer)
   ctx.beginPath();
@@ -1680,7 +1713,7 @@ function drawChipStack(x, y, amount) {
 function drawBetArea() {
   const betAmt = (state.phase === PHASE.IDLE || state.phase === PHASE.DONE) ? state.pendingBet : state.bet;
   const locked = !(state.phase === PHASE.IDLE || state.phase === PHASE.DONE);
-  const bx = 220, by = 232, bw = 140, bh = 42;
+  const bx = 220, by = 250, bw = 140, bh = 42;
 
   // Background box
   ctx.fillStyle = 'rgba(10,8,0,0.70)';
@@ -1716,6 +1749,86 @@ function drawBetArea() {
     ctx.font = '7px monospace';
     ctx.fillText(`→ ${s} (TC ${(tc>=0?'+':'')+tc.toFixed(1)})`, bx + 6, by + bh + 10);
   }
+}
+
+// Canvas chip bar constants
+const CHIP_BAR_DENOMS = [1, 5, 10, 25, 100];
+const CHIP_BAR_CX = [155, 220, 285, 350, 415];
+const CHIP_BAR_RADIUS = 16;
+const CHIP_BAR_CLEAR_X = 495, CHIP_BAR_CLEAR_W = 60, CHIP_BAR_CLEAR_H = 28;
+const CHIP_BAR_COLORS = [
+  { bg: '#888888', border: '#cccccc' },
+  { bg: '#8B1A1A', border: '#C41E3A' },
+  { bg: '#0A1A5A', border: '#3060C0' },
+  { bg: '#1A4A1A', border: '#2D5A3D' },
+  { bg: '#1A1008', border: '#D4A017' },
+];
+
+function chipBarY() {
+  return FELT_TOP + FELT_H - 22;
+}
+
+function drawChipBar() {
+  const betting = state.phase === PHASE.IDLE || state.phase === PHASE.DONE;
+  const cy = chipBarY();
+
+  // BET display above chips
+  const betAmt = betting ? state.pendingBet : state.bet;
+  ctx.fillStyle = GOLD;
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(betAmt > 0 ? `BET: ${betAmt}` : 'BET: —', 290, cy - 26);
+  ctx.textAlign = 'left';
+
+  const alpha = betting ? 1.0 : 0.3;
+  ctx.globalAlpha = alpha;
+
+  // Draw each chip circle
+  for (let i = 0; i < CHIP_BAR_DENOMS.length; i++) {
+    const cx = CHIP_BAR_CX[i];
+    const col = CHIP_BAR_COLORS[i];
+    ctx.beginPath();
+    ctx.arc(cx, cy, CHIP_BAR_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = col.bg;
+    ctx.fill();
+    ctx.strokeStyle = col.border;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Inner ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, CHIP_BAR_RADIUS - 4, 0, Math.PI * 2);
+    ctx.strokeStyle = col.border + '80';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Label
+    ctx.fillStyle = '#F5F0E8';
+    ctx.font = `bold ${CHIP_BAR_DENOMS[i] >= 100 ? '7' : '9'}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(CHIP_BAR_DENOMS[i]), cx, cy);
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+  }
+
+  // Clear button
+  const clx = CHIP_BAR_CLEAR_X - CHIP_BAR_CLEAR_W / 2;
+  const cly = cy - CHIP_BAR_CLEAR_H / 2;
+  ctx.fillStyle = '#2A1808';
+  roundRect(ctx, clx, cly, CHIP_BAR_CLEAR_W, CHIP_BAR_CLEAR_H, 4);
+  ctx.fill();
+  ctx.strokeStyle = '#6B4013';
+  ctx.lineWidth = 1;
+  roundRect(ctx, clx, cly, CHIP_BAR_CLEAR_W, CHIP_BAR_CLEAR_H, 4);
+  ctx.stroke();
+  ctx.fillStyle = '#C8901A';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('CLEAR', CHIP_BAR_CLEAR_X, cy);
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+
+  ctx.globalAlpha = 1.0;
 }
 
 function drawCountOverlay() {
@@ -1797,6 +1910,7 @@ function render() {
   }
 
   drawBetArea();
+  drawChipBar();
 
   // Payout chip animations — chips sliding from dealer to bet area
   for (let i = payoutAnims.length - 1; i >= 0; i--) {
@@ -1900,6 +2014,7 @@ function updateButtons() {
   b('btn-mute').textContent = CONFIG.soundEnabled ? '♪' : '✕';
 
   ['chip-1','chip-5','chip-10','chip-25','chip-100','btn-clear-bet'].forEach(id=>b(id).disabled=!betting);
+  b('btn-shuffle').disabled = !betting;
 
   ['btn-double','btn-split','btn-surrender','btn-hit','btn-stand'].forEach(id=>
     b(id).classList.remove('recommended'));
@@ -1943,10 +2058,38 @@ function syncMsg() {
 }
 function refresh() { render(); updateButtons(); syncMsg(); }
 
-// Chip buttons
+// Chip buttons (hidden HTML — kept for accessibility/keyboard; canvas chip bar handles mouse)
 ['1','5','10','25','100'].forEach(d=>
   document.getElementById('chip-'+d).addEventListener('click',()=>{ addChip(parseInt(d)); render(); updateButtons(); syncMsg(); }));
 document.getElementById('btn-clear-bet').addEventListener('click',()=>{ clearBet(); render(); updateButtons(); syncMsg(); });
+
+// Canvas chip bar click handler
+canvas.addEventListener('click', function(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
+  const betting = state.phase === PHASE.IDLE || state.phase === PHASE.DONE;
+  if (!betting) return;
+  const cy = chipBarY();
+  // Check each chip circle
+  for (let i = 0; i < CHIP_BAR_DENOMS.length; i++) {
+    const cx = CHIP_BAR_CX[i];
+    const dx = mx - cx, dy = my - cy;
+    if (dx*dx + dy*dy <= CHIP_BAR_RADIUS * CHIP_BAR_RADIUS) {
+      addChip(CHIP_BAR_DENOMS[i]);
+      render(); updateButtons(); syncMsg();
+      return;
+    }
+  }
+  // Check clear button
+  const clx = CHIP_BAR_CLEAR_X - CHIP_BAR_CLEAR_W / 2;
+  const cly = cy - CHIP_BAR_CLEAR_H / 2;
+  if (mx >= clx && mx <= clx + CHIP_BAR_CLEAR_W && my >= cly && my <= cly + CHIP_BAR_CLEAR_H) {
+    clearBet(); render(); updateButtons(); syncMsg();
+  }
+});
 
 // Action buttons
 document.getElementById('btn-deal').addEventListener('click',()=>{ state.phase=PHASE.IDLE; deal(); refresh(); });
@@ -1955,6 +2098,7 @@ document.getElementById('btn-stand').addEventListener('click',     ()=>{ stand()
 document.getElementById('btn-double').addEventListener('click',    ()=>{ doubleDown(); refresh(); });
 document.getElementById('btn-split').addEventListener('click',     ()=>{ split();      refresh(); });
 document.getElementById('btn-surrender').addEventListener('click', ()=>{ surrender();  refresh(); });
+document.getElementById('btn-shuffle').addEventListener('click', manualShuffle);
 document.getElementById('btn-ins-yes').addEventListener('click',()=>{ takeInsurance();   refresh(); });
 document.getElementById('btn-ins-no').addEventListener('click', ()=>{ declineInsurance(); refresh(); });
 
