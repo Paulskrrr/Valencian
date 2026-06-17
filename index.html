@@ -1088,7 +1088,7 @@ let shuffleAnim = null; // {t0, dur}
 
 function queuePayoutAnim(amount) {
   if (REDUCED || amount <= 0) return;
-  payoutAnims.push({ amount, sx: 290, sy: 170, tx: 246, ty: 270, t0: performance.now()+350, dur: 520 });
+  payoutAnims.push({ amount, sx: 290, sy: 180, tx: 290, ty: 250, t0: performance.now()+350, dur: 520 });
   scheduleRender();
 }
 
@@ -1252,9 +1252,9 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const CW = 640, CH = 360;
-const CARD_W = 52, CARD_H = 72, CARD_STEP = 58;
-const DEALER_Y = 156, PLAYER_Y = 296;
-const SHOE_X = 348, SHOE_Y = 108;
+const CARD_W = 44, CARD_H = 60, CARD_STEP = 50;
+const DEALER_Y = 160, PLAYER_Y = 226;
+const SHOE_X = 405, SHOE_Y = 100;
 const FELT = '#2D5A3D', RAIL = '#8B4513', ROOM = '#1A1008';
 const CARD_FACE = '#F5F0E8', CARD_RED = '#C41E3A', GOLD = '#D4A017';
 
@@ -1358,11 +1358,12 @@ function drawDealer() {
   const cx = 290;
   const arms = _getPoseArms();
   const eyeCol = _getPoseEye();
-  // Enlarge and centre the figure in the room area (top ~40% of screen).
-  // Maps the figure's natural centre (~290,40) to (290,74) at 1.9× scale.
+  // Seat the figure in the room band so its base meets the felt's top edge.
+  // Maps the figure's natural centre (~290,40) to (290,99) at 1.7× scale,
+  // so the vest base (~y69) lands at ~148, just above FELT_TOP (150).
   ctx.save();
-  ctx.translate(290, 74);
-  ctx.scale(1.9, 1.9);
+  ctx.translate(290, 99);
+  ctx.scale(1.7, 1.7);
   ctx.translate(-290, -40);
   // Brass automaton croupier in lounge livery — warm bronze + burgundy + gold
   const bronze='#5A4326', brass='#B88A3C', brassHi='#D9B25A', patina='#3A2A14';
@@ -1441,7 +1442,7 @@ function drawDealer() {
 }
 
 // Felt geometry — table occupies the lower ~60% of the screen
-const FELT_TOP = 178, FELT_H = 216; // 178 → 394
+const FELT_TOP = 150, FELT_H = 196; // 150 → 346 (fits within CH=360)
 
 function drawTable() {
   // Felt oval
@@ -1480,33 +1481,33 @@ function drawTable() {
 
   // Center arc decoration between dealer and player zones
   ctx.beginPath();
-  ctx.arc(290, 232, 96, Math.PI * 0.12, Math.PI * 0.88);
+  ctx.arc(290, 250, 86, Math.PI * 0.12, Math.PI * 0.88);
   ctx.strokeStyle = '#254830';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 6]);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Shoe widget — 4 stacked card backs
+  // Shoe widget — compact stack of card backs beside the dealer
   for (let i = 3; i >= 0; i--) {
     const sx = SHOE_X + i*2, sy = SHOE_Y + i*2;
     ctx.fillStyle = '#9A1828';
-    ctx.fillRect(sx, sy, 54, 74);
+    ctx.fillRect(sx, sy, 40, 54);
     ctx.fillStyle = CARD_RED;
-    ctx.fillRect(sx+2, sy+2, 50, 70);
+    ctx.fillRect(sx+2, sy+2, 36, 50);
     ctx.fillStyle = '#9A1828';
-    for (let dy = 0; dy < 70; dy += 8) {
-      for (let dx = 0; dx < 50; dx += 8) {
+    for (let dy = 0; dy < 50; dy += 8) {
+      for (let dx = 0; dx < 36; dx += 8) {
         if ((dx/8 + dy/8) % 2 === 0) ctx.fillRect(sx+2+dx, sy+2+dy, 4, 4);
       }
     }
     ctx.strokeStyle = '#F5F0E888';
     ctx.lineWidth = 0.5;
-    ctx.strokeRect(sx+2, sy+2, 50, 70);
+    ctx.strokeRect(sx+2, sy+2, 36, 50);
   }
   ctx.fillStyle = '#F5F0E860';
-  ctx.font = 'bold 7px monospace';
-  ctx.fillText('SHOE', SHOE_X + 8, SHOE_Y + 82);
+  ctx.font = 'bold 6px monospace';
+  ctx.fillText('SHOE', SHOE_X + 6, SHOE_Y + 62);
 
   // Shuffle animation glow
   if (shuffleAnim) {
@@ -1514,13 +1515,13 @@ function drawTable() {
     const flicker = Math.floor(elapsed / 80) % 2;
     ctx.strokeStyle = flicker === 0 ? '#D4A017' : '#FFD060';
     ctx.lineWidth = 2.5;
-    ctx.strokeRect(SHOE_X - 2, SHOE_Y - 2, 62, 82);
+    ctx.strokeRect(SHOE_X - 2, SHOE_Y - 2, 48, 62);
     ctx.fillStyle = (flicker === 0 ? '#D4A017' : '#FFD060') + '22';
-    ctx.fillRect(SHOE_X - 2, SHOE_Y - 2, 62, 82);
+    ctx.fillRect(SHOE_X - 2, SHOE_Y - 2, 48, 62);
     ctx.fillStyle = flicker === 0 ? '#D4A017' : '#FFD060';
     ctx.font = 'bold 7px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SHUFFLING...', SHOE_X + 29, SHOE_Y + 94);
+    ctx.fillText('SHUFFLING...', SHOE_X + 22, SHOE_Y + 74);
     ctx.textAlign = 'left';
   }
 
@@ -1582,15 +1583,15 @@ function drawCard(card, x, y, flipProg) {
 
     // Top-left rank + suit
     ctx.fillStyle = col;
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText(card.rank, 3, 13);
-    ctx.font = '9px monospace';
-    ctx.fillText(card.suit, 3, 23);
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(card.rank, 3, 12);
+    ctx.font = '8px monospace';
+    ctx.fillText(card.suit, 3, 21);
 
     // Center suit glyph
-    ctx.font = '22px monospace';
+    ctx.font = '18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(card.suit, CARD_W/2, CARD_H/2 + 8);
+    ctx.fillText(card.suit, CARD_W/2, CARD_H/2 + 6);
     ctx.textAlign = 'left';
 
     // Bottom-right rank + suit (rotated 180)
@@ -1598,10 +1599,10 @@ function drawCard(card, x, y, flipProg) {
     ctx.translate(CARD_W - 3, CARD_H - 4);
     ctx.rotate(Math.PI);
     ctx.fillStyle = col;
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText(card.rank, 0, 10);
-    ctx.font = '9px monospace';
-    ctx.fillText(card.suit, 0, 20);
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(card.rank, 0, 9);
+    ctx.font = '8px monospace';
+    ctx.fillText(card.suit, 0, 18);
     ctx.restore();
   }
 
@@ -1754,7 +1755,7 @@ function drawBetArea() {
 // Canvas chip bar constants
 const CHIP_BAR_DENOMS = [1, 5, 10, 25, 100];
 const CHIP_BAR_CX = [155, 220, 285, 350, 415];
-const CHIP_BAR_RADIUS = 16;
+const CHIP_BAR_RADIUS = 14;
 const CHIP_BAR_CLEAR_X = 495, CHIP_BAR_CLEAR_W = 60, CHIP_BAR_CLEAR_H = 28;
 const CHIP_BAR_COLORS = [
   { bg: '#888888', border: '#cccccc' },
@@ -1774,10 +1775,11 @@ function drawChipBar() {
 
   // BET display above chips
   const betAmt = betting ? state.pendingBet : state.bet;
-  ctx.fillStyle = GOLD;
+  ctx.fillStyle = betting ? GOLD : '#6B5030';
   ctx.font = 'bold 11px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(betAmt > 0 ? `BET: ${betAmt}` : 'BET: —', 290, cy - 26);
+  const betLabel = betting ? (betAmt > 0 ? `BET: ${betAmt}` : 'BET: —') : `BET (locked): ${betAmt}`;
+  ctx.fillText(betLabel, 290, cy - 22);
   ctx.textAlign = 'left';
 
   const alpha = betting ? 1.0 : 0.3;
@@ -1909,7 +1911,6 @@ function render() {
     drawHand(h.cards, PLAYER_Y, cx, lbl, isActive, h.result);
   }
 
-  drawBetArea();
   drawChipBar();
 
   // Payout chip animations — chips sliding from dealer to bet area
