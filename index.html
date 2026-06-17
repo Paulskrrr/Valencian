@@ -887,18 +887,15 @@ function checkImmediateBlackjack() {
   // Peek: dealer checks hole card when showing 10/A (US rules)
   if (CONFIG.peek && isBlackjack(state.dealerCards)) {
     revealHole();
-    // Pay insurance if taken
-    if (state.insuranceBet>0) { state.bankroll+=state.insuranceBet*3; } // bet returned + 2:1 profit
-    if (isBlackjack(hand.cards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); }
-    else                         { settleHand(hand,'lose'); setMsg('Dealer has blackjack.'); playSound('lose'); }
+    if (state.insuranceBet>0) { state.bankroll+=state.insuranceBet*3; }
+    if (isBlackjack(hand.cards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); triggerBanner('PUSH', '#8888C0'); }
+    else                         { settleHand(hand,'lose'); setMsg('Dealer has blackjack.'); playSound('lose'); triggerBanner('LOSE  -'+hand.bet, '#C04040'); }
     state.phase=PHASE.DONE; finishRound(); return;
   }
-  // No peek or dealer doesn't have BJ: handle insurance loss (already deducted)
-  // Nothing to deduct — it was taken off bankroll in takeInsurance()
   if (isBlackjack(hand.cards)) {
     revealHole();
-    if (isBlackjack(state.dealerCards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); }
-    else                                { settleHand(hand,'bj');   setMsg('Blackjack! You win.'); playSound('bj'); triggerBJFlash(); }
+    if (isBlackjack(state.dealerCards)) { settleHand(hand,'push'); setMsg('Push — both blackjack.'); triggerBanner('PUSH', '#8888C0'); }
+    else                                { settleHand(hand,'bj'); setMsg('Blackjack! You win.'); playSound('bj'); triggerBJFlash(); triggerBanner('BLACKJACK  +'+hand.payout, GOLD); }
     state.phase=PHASE.DONE; finishRound(); return;
   }
   state.phase=PHASE.PLAYER;
@@ -1009,6 +1006,20 @@ function settleAll() {
   }
   state.phase=PHASE.DONE; state.messageWrong=false; state.betCoachNote=null;
   state.pendingBet=state.bet;
+  // Result banner
+  { const net=state.hands.reduce((s,h)=>s+h.payout,0);
+    const hasBJ=state.hands.some(h=>h.result==='bj');
+    const allPush=state.hands.every(h=>h.result==='push');
+    const allSur=state.hands.every(h=>h.result==='surrender');
+    let bt,bc;
+    if (hasBJ)           { bt='BLACKJACK  +'+(net); bc=GOLD; }
+    else if (allPush)    { bt='PUSH';                bc='#8888C0'; }
+    else if (allSur)     { bt='SURRENDER  '+net;     bc='#C08040'; }
+    else if (net>0)      { bt='WIN  +'+net;          bc='#60C060'; }
+    else if (net<0)      { bt='LOSE  '+net;          bc='#C04040'; }
+    else                 { bt='PUSH';                bc='#8888C0'; }
+    triggerBanner(bt, bc);
+  }
   // Play outcome sounds (one sound total) + payout animations
   const hasWin = state.hands.some(h=>h.result==='win'||h.result==='bj');
   const allLose = state.hands.every(h=>h.result==='lose'||h.result==='surrender');
@@ -1051,6 +1062,7 @@ let shakeAnim = null;   // {t0, dur, intensity}
 let flashAnim = null;   // {t0, dur, color}
 
 let payoutAnims = []; // [{amount, sx, sy, tx, ty, t0, dur}]
+let bannerAnim  = null; // {text, color, t0, fadein, hold, fadeout}
 
 function queuePayoutAnim(amount) {
   if (REDUCED || amount <= 0) return;
@@ -1065,7 +1077,7 @@ function scheduleRender() {
 function renderFrame() {
   rafId = null;
   render();
-  if (slideAnims.size > 0 || flipAnims.size > 0 || shakeAnim || flashAnim || payoutAnims.length > 0) scheduleRender();
+  if (slideAnims.size > 0 || flipAnims.size > 0 || shakeAnim || flashAnim || bannerAnim || payoutAnims.length > 0) scheduleRender();
 }
 
 // Check prefers-reduced-motion
@@ -1096,6 +1108,12 @@ function triggerShake() {
 function triggerBJFlash() {
   if (REDUCED) return;
   flashAnim = { t0: performance.now(), dur: 600, color: GOLD };
+  scheduleRender();
+}
+
+function triggerBanner(text, color) {
+  if (REDUCED) return;
+  bannerAnim = { text, color, t0: performance.now(), fadein: 130, hold: 980, fadeout: 340 };
   scheduleRender();
 }
 
@@ -1627,6 +1645,54 @@ function render() {
       const alpha = (1 - t) * 0.35;
       ctx.fillStyle = flashAnim.color + Math.round(alpha*255).toString(16).padStart(2,'0');
       ctx.fillRect(0, 0, CW, CH);
+    }
+  }
+
+  // Result banner
+  if (bannerAnim) {
+    const ba = bannerAnim;
+    const elapsed = now - ba.t0;
+    const total = ba.fadein + ba.hold + ba.fadeout;
+    if (elapsed >= total) {
+      bannerAnim = null;
+    } else {
+      let alpha;
+      if (elapsed < ba.fadein) alpha = elapsed / ba.fadein;
+      else if (elapsed < ba.fadein + ba.hold) alpha = 1;
+      else alpha = 1 - (elapsed - ba.fadein - ba.hold) / ba.fadeout;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = 'bold 26px monospace';
+      const tw = ctx.measureText(ba.text).width;
+      const pad = 22;
+      const bw = Math.max(160, tw + pad * 2);
+      const bh = 52;
+      const bx = CW / 2 - bw / 2;
+      const by = CH / 2 - bh / 2;
+
+      // Shadow halo
+      ctx.shadowColor = ba.color;
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = 'rgba(6,3,1,0.92)';
+      roundRect(ctx, bx, by, bw, bh, 11);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Border
+      ctx.strokeStyle = ba.color;
+      ctx.lineWidth = 2;
+      roundRect(ctx, bx, by, bw, bh, 11);
+      ctx.stroke();
+
+      // Text
+      ctx.fillStyle = ba.color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(ba.text, CW / 2, CH / 2);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.restore();
     }
   }
 }
