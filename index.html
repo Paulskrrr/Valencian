@@ -1278,8 +1278,8 @@ const ctx = canvas.getContext('2d');
 
 const CW = 640, CH = 360;
 const CARD_W = 44, CARD_H = 60, CARD_STEP = 50;
-const DEALER_Y = 255, PLAYER_Y = 298;
-const SHOE_X = 440, SHOE_Y = 243; // TABLE_FAR_Y(235) + 8
+const DEALER_Y = 248, PLAYER_Y = 298;
+const SHOE_X = 452, SHOE_Y = 220; // on the felt, dealer's right
 const FELT = '#2D5A3D', RAIL = '#8B4513', ROOM = '#1A1008';
 const CARD_FACE = '#F5F0E8', CARD_RED = '#C41E3A', GOLD = '#D4A017';
 
@@ -1485,7 +1485,7 @@ function _drawDealerRobot() {
   // Seat the figure so its vest base (~y69) lands just above FELT_TOP.
   // translate_y = FELT_TOP - 2 - 1.7*(69-40) ≈ 139 for FELT_TOP=190.
   ctx.save();
-  ctx.translate(290, 168);
+  ctx.translate(290, 161);
   ctx.scale(1.7, 1.7);
   ctx.translate(-290, -40);
   // Brass automaton croupier in lounge livery — warm bronze + burgundy + gold
@@ -1564,38 +1564,33 @@ function _drawDealerRobot() {
   ctx.restore();
 }
 
-// Felt geometry — U/horseshoe table: dealer arc at top, sides sweep off-canvas
-const TABLE_FAR_Y  = 235;   // y-center of dealer/far arc
-const TABLE_FAR_RX = 195;   // x-radius of far arc (how wide dealer edge is)
-const TABLE_FAR_RY = 16;    // y-radius of far arc (keep it shallow)
-const TABLE_CX     = 320;   // horizontal center
-const FELT_TOP = TABLE_FAR_Y - TABLE_FAR_RY; // = 219 — compatibility alias
+// Felt geometry — half-circle casino table viewed from the player, looking down.
+// Dealer stands behind the long straight edge (top); the rounded edge bulges
+// toward the player (bottom). Foreshortened because the POV looks down at it.
+const TABLE_CX      = 320;   // horizontal center
+const TABLE_TOP_Y   = 212;   // dealer's straight back edge
+const TABLE_BOT_Y   = 352;   // player's rounded front edge (covers chip bar)
+const TABLE_HALF_W  = 248;   // half-width of the back edge (widest part)
+const TABLE_TOP_BOW = 10;    // back edge bows up slightly toward the dealer
+const FELT_TOP = TABLE_TOP_Y; // compatibility alias for dealer seating
 
-function _tableOuterPath() {
-  const lx = TABLE_CX - TABLE_FAR_RX;
-  const rx = TABLE_CX + TABLE_FAR_RX;
+function _tablePath(xi, yi) {
+  const cx = TABLE_CX;
+  const L = cx - TABLE_HALF_W + xi, R = cx + TABLE_HALF_W - xi;
+  const ty = TABLE_TOP_Y + yi, by = TABLE_BOT_Y - yi;
+  const hw = TABLE_HALF_W - xi;
   const p = new Path2D();
-  p.moveTo(lx, TABLE_FAR_Y);
-  p.ellipse(TABLE_CX, TABLE_FAR_Y, TABLE_FAR_RX, TABLE_FAR_RY, 0, Math.PI, 0, false);
-  p.bezierCurveTo(rx + 80, TABLE_FAR_Y + 50,  650, 290,  650, CH + 10);
-  p.lineTo(-10, CH + 10);
-  p.bezierCurveTo(-10, 290,  lx - 80, TABLE_FAR_Y + 50,  lx, TABLE_FAR_Y);
+  p.moveTo(L, ty);
+  // Dealer back edge — shallow arc bowing up toward the dealer
+  p.quadraticCurveTo(cx, ty - TABLE_TOP_BOW, R, ty);
+  // Right shoulder → broad flat-bottomed front → left shoulder
+  p.bezierCurveTo(R + 6, ty + 58,  cx + hw * 0.62, by,  cx, by);
+  p.bezierCurveTo(cx - hw * 0.62, by,  L - 6, ty + 58,  L, ty);
   p.closePath();
   return p;
 }
-
-function _tableInsetPath(xi, yi) {
-  const lx = TABLE_CX - (TABLE_FAR_RX - xi);
-  const rx = TABLE_CX + (TABLE_FAR_RX - xi);
-  const p = new Path2D();
-  p.moveTo(lx, TABLE_FAR_Y + yi);
-  p.ellipse(TABLE_CX, TABLE_FAR_Y + yi, TABLE_FAR_RX - xi, Math.max(4, TABLE_FAR_RY - yi / 2), 0, Math.PI, 0, false);
-  p.bezierCurveTo(rx + (80 - xi * 2), TABLE_FAR_Y + 50 + yi,  650, 290,  650, CH + 10);
-  p.lineTo(-10, CH + 10);
-  p.bezierCurveTo(-10, 290,  lx - (80 - xi * 2), TABLE_FAR_Y + 50 + yi,  lx, TABLE_FAR_Y + yi);
-  p.closePath();
-  return p;
-}
+function _tableOuterPath() { return _tablePath(0, 0); }
+function _tableInsetPath(xi, yi) { return _tablePath(xi, yi); }
 
 function drawTable() {
   const outer = _tableOuterPath();
@@ -1607,16 +1602,13 @@ function drawTable() {
   ctx.fill(outer);
   ctx.restore();
 
-  // Felt fill — clipped to shape, radial gradient
-  ctx.save();
-  ctx.clip(outer);
-  const grad = ctx.createRadialGradient(TABLE_CX, TABLE_FAR_Y + 50, 20, TABLE_CX, TABLE_FAR_Y + 60, 280);
+  // Felt fill — radial gradient, brighter near the dealer (top) for the down-angle
+  const grad = ctx.createRadialGradient(TABLE_CX, TABLE_TOP_Y + 40, 20, TABLE_CX, TABLE_TOP_Y + 60, 260);
   grad.addColorStop(0, '#3A7050');
   grad.addColorStop(0.55, '#2D5A3D');
   grad.addColorStop(1, '#1E3D28');
   ctx.fillStyle = grad;
-  ctx.fillRect(-10, TABLE_FAR_Y - 30, CW + 20, CH + 40);
-  ctx.restore();
+  ctx.fill(outer);
 
   // Rail outer stroke — mahogany
   ctx.save();
