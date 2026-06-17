@@ -866,7 +866,7 @@ function deal() {
   if (state.pendingBet<=0) { setMsg('Place a bet first.'); return; }
   if (state.pendingBet>state.bankroll) { setMsg(`Bet exceeds bankroll (${state.bankroll}).`); return; }
   checkBetCoach();
-  if (shoe.needsShuffle(CONFIG.penetration)) { shoe.build(); count.reset(); }
+  if (shoe.needsShuffle(CONFIG.penetration)) { shoe.build(); count.reset(); playSound('shuffle'); }
   state.bet=state.pendingBet; state.messageWrong=false;
   const p1=shoe.deal(), p2=shoe.deal(), d1=shoe.deal(), d2=shoe.deal(false);
   count.countCard(p1); count.countCard(p2); count.countCard(d1);
@@ -1075,6 +1075,7 @@ function manualShuffle() {
   shoe.build();
   count.reset();
   setMsg('Shuffled.');
+  playSound('shuffle');
   if (!REDUCED) {
     shuffleAnim = { t0: performance.now(), dur: 1200 };
     scheduleRender();
@@ -1263,6 +1264,23 @@ function playSound(type) {
       g.gain.exponentialRampToValueAtTime(0.001, now+delay+0.35);
       osc.start(now+delay); osc.stop(now+delay+0.38);
     });
+  } else if (type === 'shuffle') {
+    // Rapid card-riffle: multiple short noise bursts with slight pitch variation
+    for (let i = 0; i < 6; i++) {
+      const t = now + i * 0.055;
+      const dur = 0.04;
+      const buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let j = 0; j < d.length; j++) d[j] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(900 + i * 60, t); bp.Q.value = 1.2;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.08, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      src.connect(bp); bp.connect(g); g.connect(ac.destination);
+      src.start(t); src.stop(t + dur + 0.005);
+    }
   }
 }
 
@@ -1793,7 +1811,7 @@ function cardStartX(numCards, centerX) {
   return Math.round(centerX - totalW/2);
 }
 
-function drawHand(cards, y, centerX, label, isActive, result) {
+function drawHand(cards, y, centerX, label, isActive, result, bet=null) {
   if (!cards || cards.length === 0) return;
   const numCards = cards.length;
   const startX = cardStartX(numCards, centerX);
@@ -1808,15 +1826,16 @@ function drawHand(cards, y, centerX, label, isActive, result) {
     drawCard(card, pos.x, pos.y, fp);
   }
 
-  // Draw total label next to last card
+  // Draw info label next to last card: total (+ bet for player hands)
   const visCards = cards.filter(c => c.faceUp);
   if (visCards.length > 0) {
     const { total, soft } = handTotal(visCards);
     const totalStr = (soft && total < 21 ? 'S' : '') + total;
     const lastCardX = startX + (numCards-1) * CARD_STEP;
+    const infoStr = bet != null ? totalStr + ' B:' + bet : totalStr;
     ctx.fillStyle = GOLD;
-    ctx.font = '9px monospace';
-    ctx.fillText(totalStr, lastCardX + CARD_W + 4, y + CARD_H/2 + 4);
+    ctx.font = '8px monospace';
+    ctx.fillText(infoStr, lastCardX + CARD_W + 4, y + CARD_H/2 + 4);
   }
 
   // Active hand gold underline
@@ -1951,15 +1970,6 @@ function drawChipBar() {
   const betting = state.phase === PHASE.IDLE || state.phase === PHASE.DONE;
   const chips = _chipPositions();
 
-  // BET display — above the chip arc, center of table
-  const betAmt = betting ? state.pendingBet : state.bet;
-  ctx.fillStyle = betting ? GOLD : '#6B5030';
-  ctx.font = 'bold 10px monospace';
-  ctx.textAlign = 'center';
-  const betLabel = betting ? (betAmt > 0 ? `BET: ${betAmt}` : 'BET: —') : `BET (locked): ${betAmt}`;
-  ctx.fillText(betLabel, TABLE_CX, chips[2].y - 16);
-  ctx.textAlign = 'left';
-
   const alpha = betting ? 1.0 : 0.3;
   ctx.globalAlpha = alpha;
 
@@ -2085,7 +2095,7 @@ function render() {
     const cx = handCenterX(i, numHands);
     const isActive = i === state.activeHandIdx && state.phase === PHASE.PLAYER;
     const lbl = numHands > 1 ? `HAND ${i+1}` : '';
-    drawHand(h.cards, PLAYER_Y, cx, lbl, isActive, h.result);
+    drawHand(h.cards, PLAYER_Y, cx, lbl, isActive, h.result, h.bet);
   }
 
   drawChipBar();
