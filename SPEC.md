@@ -1,232 +1,237 @@
 # SPEC.md — Valencian: Blackjack Card Counting Trainer
 
-A single-file, offline, browser-based blackjack trainer built to teach **Hi-Lo
-card counting** and **perfect basic strategy** through real play. No ads, no
-server, no tracking. Runs by opening `index.html` in any browser.
+A single-file, offline, browser-based blackjack trainer that teaches **Hi-Lo card
+counting** and **perfect basic strategy** through real play. No ads, no server,
+no tracking. Runs by opening `index.html` in any browser.
 
-This document reflects the current state of the project and the direction it is
-heading. It is a living reference, not a construction checklist.
+This document describes the **current state** of the project and the **immediate
+next development step**. It is a living reference, not a build log. Prior phase
+history is irrelevant; what matters is what exists now and where it goes next.
 
 ---
 
 ## The Vision
 
-The experience should feel like sitting across from a dealer at a proper table
-in a 1950s jazz lounge — warm lamplight, a little smoky, unhurried. The player
-faces a real dealer figure, a genuine felt table, and a room that exists behind
-it all. The trainer aspect is woven in subtly: counts and hints are available
-but never intrusive.
-
-The aesthetic is **warm pixel art**: rich, readable, atmospheric. Not garish
-Vegas neon, not cold sci-fi. Cards and chips should feel physically present.
+Sitting across from a dealer at a proper table in a 1950s jazz lounge — warm
+lamplight, a little smoky, unhurried. A real dealer figure, a genuine felt table,
+a room that exists behind it all. The trainer aspect is woven in subtly: counts
+and hints are available but never intrusive. Aesthetic: **warm pixel art** —
+rich, readable, atmospheric. Not Vegas neon, not cold sci-fi. Cards and chips
+feel physically present.
 
 ---
 
-## Architecture
+## Non-goals (permanent — do not violate)
 
-- **Stack:** Vanilla HTML + CSS + JavaScript. No frameworks, no build step, no npm.
-- **Single file:** `index.html` with embedded `<style>` and `<script>`. The background
-  image is baked in as a base64 data-URI constant (`BG_SRC`).
-- **Canvas:** 640×360 internal resolution, CSS-scaled 16:9. `image-rendering: pixelated`.
-  The canvas renders everything except menus/panels (stats, settings).
-- **Sound:** Web Audio API, synthesized procedurally — no external audio files.
-- **Persistence:** `localStorage`. Keys: `bj_alltime_v1` (stats), `bj_settings_v1`
-  (table config).
-- **No network calls at runtime.**
+- No server, no accounts, no network calls at runtime.
+- **No external libraries, frameworks, build tools, or npm.** Everything is
+  hand-written vanilla JS in a single file.
+- No monetisation, ads, or tracking of any kind.
+- No 3D card animations or physics — pixel art, flat, readable.
+
+---
+
+## Architecture (as built)
+
+- **Stack:** Vanilla HTML + CSS + JavaScript. Single `index.html` with embedded
+  `<style>` and `<script>`. No dependencies.
+- **Canvas:** 640x360 internal resolution (`CW`/`CH`), CSS-scaled to fill the
+  viewport at 16:9. `image-rendering: pixelated`. The canvas renders everything
+  except the stats and settings panels (which are HTML overlays).
+- **Background:** baked in as a base64 data-URI constant `BG_SRC`. Swap the scene
+  by replacing that string. Fallback when empty: flat `ROOM = '#1A1008'`.
+- **Sound:** Web Audio API, synthesized procedurally. No audio files.
+- **Persistence:** `localStorage` — `bj_alltime_v1` (stats), `bj_settings_v1`
+  (config).
+- **Render loop:** `scheduleRender()` drives draws; animations re-schedule
+  themselves while active. `prefers-reduced-motion` collapses animations to
+  instant cuts.
+
+### Layout geometry (constants)
+```
+CW = 640, CH = 360
+FELT_TOP = 178, FELT_H = 216   (felt y=178 to y=394, clipped at canvas bottom)
+DEALER_Y = 156                  (dealer cards)
+PLAYER_Y = 296                  (player cards)
+SHOE_X = 348, SHOE_Y = 108      (shoe widget, beside the dealer figure)
+```
+Top ~50% is the **room zone** (background shows through; dealer figure + shoe
+live here). Bottom ~50% is the **table zone** (felt oval, mahogany rail, brass
+trim; dealer cards inside the felt top, player cards lower; chip bar + bet
+display at the felt bottom). Action buttons are HTML below the canvas.
+
+### Draw order (back to front, in the main render)
+room background -> dealer figure -> felt/rail -> shoe -> cards -> chips ->
+chip bar -> banners/overlays.
 
 ---
 
 ## Current State — What's Built
 
-### Layout
-The canvas is divided into two zones:
-
-- **Room zone (top ~50%):** The jazz lounge background image shows through here.
-  The dealer figure and shoe widget live in this zone, immediately above the felt.
-- **Table zone (bottom ~50%):** Felt oval with mahogany rail and brass trim.
-  Dealer cards sit just inside the top of the felt; player cards in the lower
-  half. The chip bar and bet display sit at the bottom of the felt. Action
-  buttons are HTML elements below the canvas.
-
-Constants that define this geometry:
-```
-CW = 640, CH = 360
-FELT_TOP = 178, FELT_H = 216  (felt runs from y=178 to y=394, clipped at canvas bottom)
-DEALER_Y = 156                 (dealer cards)
-PLAYER_Y = 296                 (player cards)
-SHOE_X = 348, SHOE_Y = 108    (shoe widget, adjacent to the dealer figure)
-```
-
-### Background
-A pixel-art jazz lounge scene is hardcoded as a base64 webp in the `BG_SRC`
-constant. To swap it: replace the string value of `BG_SRC`. The fallback (when
-`BG_SRC` is empty) is a flat dark warm brown fill (`ROOM = '#1A1008'`).
-
-### Dealer Figure
-An animated brass automaton drawn procedurally with canvas 2D primitives.
-Four poses: `idle`, `dealing`, `win`, `lose`. Arms and eye colour lerp smoothly
-between poses via `dealerPoseAnim`.
-
-The robot is a **placeholder**. The intended final state is a human pixel-art
-dealer sprite. The pose state machine (`DEALER_POSE`, `setDealerPose`,
-`setDealerPoseWith`) will remain; only the draw function changes.
-
-Eye colours by pose:
-- Idle: warm amber `#F0B83C`
-- Dealing: focused warm white `#FFE9B0`
-- Win (dealer won): warm red `#E0503A`
-- Lose (dealer lost): green `#6FBF5A`
-
-### Cards
-Drawn procedurally: warm off-white face `#F5F0E8`, pixel diamond back pattern.
-Suits as Unicode glyphs. Red suits use `CARD_RED = '#C41E3A'`.
-
-Animations: slide from shoe, flip reveal (scale-X interpolation), bust shake,
-blackjack gold flash.
-
-### Chips
-Denominations: 1 / 5 / 10 / 25 / 100.
-
-Chips are drawn on the canvas felt (not HTML buttons). The HTML chip buttons
-remain in the DOM (hidden) for their event-listener wiring; canvas click
-hit-testing calls the same `addChip()` / `clearBet()` functions.
-
-Win payouts animate as a chip-stack arc from dealer zone to bet area.
-
-### Chip Bar (canvas)
-Drawn at the bottom of the felt. Five coloured circles, a CLEAR button, and
-a `BET: X` label above. Dims to 30% opacity when not in a betting phase.
-
-Chip positions (center X): `[155, 220, 285, 350, 415]`, radius 16px.
-
-### Shoe & Shuffle
-The shoe widget sits at `SHOE_X=348, SHOE_Y=108` — adjacent to the dealer,
-within the room zone. A **Shuffle** button in the controls triggers
-`manualShuffle()`: rebuilds the shoe, resets the count, and plays a 1200ms
-amber flicker animation on the shoe widget. Auto-shuffle still triggers at
-the configured penetration threshold inside `deal()`.
-
 ### Blackjack Engine
-
 | Feature | Detail |
 |---|---|
-| Decks | Configurable 1–8 |
-| Dealer rule | H17 or S17 (configurable) |
+| Decks | Configurable 1-8 |
+| Dealer rule | H17 or S17 |
 | BJ payout | 3:2 / 6:5 / 1:1 |
 | Surrender | Late / None |
 | DAS | On/Off |
-| Re-split | Up to 3× |
+| Re-split | Up to 3x |
 | Split aces | One card each (configurable) |
-| Double | Any two cards (configurable) or 9-10-11 only |
-| Penetration | 50–90% configurable |
-| Dealer peek | US rules — dealer checks for BJ on 10/A; configurable, on by default |
-| Insurance | Offered on dealer Ace; settled correctly in peek and no-peek modes |
+| Double | Any two cards, or 9-10-11 only |
+| Penetration | 50-90% configurable |
+| Dealer peek | US rules, on by default, configurable |
+| Insurance | Offered on dealer Ace; settled correctly in peek & no-peek |
 
 ### Hi-Lo Counting
-Running count updates as each card is revealed. True count = RC ÷ decks
-remaining (rounded to nearest 0.5, minimum 0.5). Count resets on shuffle.
-Toggle overlay with [C] or the RC button.
+Running count updates as each card reveals. True count = RC / decks remaining
+(rounded to nearest 0.5, min 0.5). Resets on shuffle. Overlay toggled with [C]
+or the RC button.
 
 ### Strategy Engine
-Tables: `PAIRS`, `SOFT_H17`, `SOFT_S17`, `HARD`, `SURRENDER_H17`, `SURRENDER_S17`.
-Hint engine highlights the recommended action button (★ toggle, hotkey [I]).
-Wrong decisions show a one-line reason. Strategy accuracy tracked per category
-(hard / soft / pairs / surrender).
+Tables: `PAIRS`, `SOFT_H17`, `SOFT_S17`, `HARD`, `SURRENDER_H17`,
+`SURRENDER_S17`. Hint engine highlights the recommended action button (star
+toggle, [I]); wrong decisions show a one-line reason. Strategy accuracy tracked
+per category (hard / soft / pairs / surrender). Bet-spread coaching:
+`suggestedBet = betUnit * max(1, TC-1)`, shown alongside the bet when hints on.
 
-Bet-spread coaching: `suggestedBet = betUnit × max(1, TC−1)`. Shown alongside
-bet amount when hints are on, always (not separately gated).
+### Dealer Figure (current = placeholder)
+An animated **brass automaton** drawn procedurally with canvas 2D primitives in
+`drawDealer()`. A pose state machine drives it:
+- `DEALER_POSE = { IDLE, DEALING, WIN, LOSE }`, `dealerPose` holds current.
+- `setDealerPose(to, dur)` / `setDealerPoseWith(to, returnAfter, dur)` transition
+  and (optionally) auto-return to idle.
+- `dealerPoseAnim` holds the active tween; `_getPoseArms()` lerps arm angles and
+  `_getPoseEye()` switches eye colour at the tween midpoint.
+- Pose tables: `POSE_ARMS` (arm angles L/R per pose), `POSE_EYE` (eye colour per
+  pose). Eye colours: idle amber `#F0B83C`, dealing warm white `#FFE9B0`, win
+  red `#E0503A`, lose green `#6FBF5A`.
+- `drawDealer()` seats the figure via a save/translate/scale(1.7)/translate so
+  its base meets the felt top, centred at x~290.
 
-### Animations
-| Animation | Trigger |
-|---|---|
-| Card slide | Deal, hit, double, split, dealer draw |
-| Card flip | Hole card reveal |
-| Screen shake | Bust |
-| Gold flash | Player blackjack |
-| Chip arc | Win payout |
-| Result banner | End of round (WIN / LOSE / PUSH / BLACKJACK / SURRENDER + amount) |
-| Dealer pose lerp | Dealing, win, lose, idle transitions |
-| Shuffle flicker | Manual or auto-shuffle |
+The robot is explicitly a placeholder. **The pose state machine is the stable
+contract; only the rendering of the figure changes.**
 
-All animations respect `prefers-reduced-motion` (instant cuts).
+### Cards
+Procedural: warm off-white face `#F5F0E8`, pixel diamond back, Unicode suit
+glyphs, red suits `#C41E3A`. Animations: slide from shoe, flip reveal (scale-X),
+bust shake, blackjack gold flash.
 
-### Sound (procedural, Web Audio API)
-- **Deal:** swept low-pass noise burst + sine thump, staggered per card
-- **Win:** rising warm arpeggio
-- **Lose:** falling minor tone
-- **Blackjack:** distinct bright win sound
-- Mute toggle [M], persistent via settings.
+### Chips
+Denominations 1 / 5 / 10 / 25 / 100. Drawn on the felt (hidden HTML buttons
+retained only for event wiring; canvas hit-testing calls `addChip()`/`clearBet()`).
+Win payouts animate as a chip-stack arc. Chip bar at felt bottom: five circles
+(centres `[155,220,285,350,415]`, r=16), CLEAR button, `BET: X` label; dims to
+30% when not betting.
 
-### Insurance UI
-Plain text: `Insurance? Yes / No` with underlined Y and N.
-Keyboard: [Y] takes insurance, [N] declines. No button styling.
+### Shoe & Shuffle
+Shoe widget at `SHOE_X=348, SHOE_Y=108`. **Shuffle** control runs
+`manualShuffle()` (rebuild shoe, reset count, 1200ms amber flicker). Auto-shuffle
+fires at the penetration threshold inside `deal()`.
 
-### Stats
-Session and all-time scopes, side by side. Tracks: hands, win/loss/push,
-blackjacks, strategy accuracy by category, bankroll delta, sparkline.
-Export/import JSON. New session and Reset all buttons.
+### Sound (procedural)
+Deal (swept noise burst + sine thump, staggered), win (rising warm arpeggio),
+lose (falling minor tone), blackjack (bright distinct win). Mute [M], persisted.
 
-### Settings
-All settings persisted to `bj_settings_v1`. Applied immediately (feature
-toggles) or on next deal/shuffle (table rules).
+### Stats / Settings / Insurance UI
+Stats: session + all-time side by side — hands, win/loss/push, blackjacks,
+strategy accuracy by category, bankroll delta, sparkline; export/import JSON;
+new-session and reset-all. Settings: all table rules + feature toggles, persisted
+to `bj_settings_v1`, applied immediately or on next deal/shuffle. Insurance:
+plain text `Insurance? Yes / No`, keys [Y]/[N].
 
-### Controls & Keyboard
-| Key | Action |
-|---|---|
-| Space / Enter | Deal / advance round |
-| H | Hit |
-| S | Stand |
-| W | Double down |
-| P | Split |
-| R | Surrender |
-| Y / N | Insurance yes / no |
-| C | Count overlay |
-| I | Hints toggle |
-| M | Mute |
-| T | Stats panel |
-| G | Settings panel |
+### Controls
+Space/Enter deal/advance . H hit . S stand . W double . P split . R surrender .
+Y/N insurance . C count . I hints . M mute . T stats . G settings.
 
----
-
-## Colour Palette
-
-| Role | Value |
-|---|---|
-| Felt | `#2D5A3D` |
-| Rail (mahogany) | `#8B4513` |
-| Rail trim (brass) | `#D4A017` |
-| Room / background fallback | `#1A1008` |
-| Card face | `#F5F0E8` |
-| Card back / red suits | `#C41E3A` |
-| Gold accent | `#D4A017` |
+### Palette
+Felt `#2D5A3D` . rail `#8B4513` . brass trim `#D4A017` . room `#1A1008` . card
+face `#F5F0E8` . card back/red `#C41E3A` . gold `#D4A017`.
 
 ---
 
-## What's Next — Open Items
+## NEXT DEVELOPMENT STEP — Human dealer sprite + procedural idle
 
-1. **Human dealer sprite.** Replace the procedural brass robot with a pixel-art
-   human dealer. The pose state machine stays; only `drawDealer()` is swapped out.
-   Art direction: 1950s lounge croupier, warm tones, consistent with the background.
+Replace the placeholder brass robot with a **human pixel-art dealer sprite** (a
+1950s lounge croupier, warm tones, consistent with the background), and give it
+subtle life through **code-driven micro-animation** — no new drawn frames beyond
+a small set of pose images.
 
-2. **Background polish.** The current BG is a single static image. Could eventually
-   animate subtle details (smoke curl, lamp flicker) if it doesn't hurt performance.
+This is a **rendering-only change.** Do NOT touch the engine, counting, strategy,
+stats, settings, sound, or the pose state machine. The contract is: `drawDealer()`
+and its supporting draw helpers are rewritten; everything that *calls into* the
+pose system (`setDealerPose`, `setDealerPoseWith`, `DEALER_POSE`, the
+win/lose/dealing triggers already wired in `deal()` and settlement) stays exactly
+as is.
 
-3. **Index deviations.** The setting exists and is toggleable, but deviation
-   logic is not yet wired into the hint engine. Illustrative deviations:
-   Fab 4 surrenders, Insurance at TC≥3, 16 vs 10 stand at TC≥0, etc.
+### Asset model
+- The dealer is supplied as **pose images with transparent backgrounds**, loaded
+  the same way `BG_SRC` is — as base64 data-URI constants (e.g. `DEALER_IDLE_SRC`,
+  `DEALER_DEALING_SRC`, `DEALER_WIN_SRC`, `DEALER_LOSE_SRC`). The human will
+  provide these. Until they exist, fall back to the current procedural robot so
+  the game never breaks (guard on whether the sprite constant is non-empty,
+  mirroring the `BG_SRC` fallback pattern).
+- Optionally a separate **eyes-closed** variant of the idle image
+  (`DEALER_BLINK_SRC`) for blinking. If absent, skip blinking gracefully.
+- Images are drawn with `ctx.drawImage` seated using the **same transform the
+  current `drawDealer()` uses** (centre x~290, scaled so the figure's base meets
+  `FELT_TOP`). Keep pixel crispness — no smoothing
+  (`ctx.imageSmoothingEnabled = false` around the draw).
 
-4. **Mobile / touch.** The canvas scales responsively but touch targets on the
-   chip bar are 32px circles — acceptable but could be larger on phones.
+### Pose -> image mapping
+Map the existing `DEALER_POSE` states to images:
+- `IDLE` -> `DEALER_IDLE_SRC`
+- `DEALING` -> `DEALER_DEALING_SRC`
+- `WIN` -> `DEALER_WIN_SRC`
+- `LOSE` -> `DEALER_LOSE_SRC`
+During a `dealerPoseAnim` transition, cross-fade or hard-swap at the tween
+midpoint (reuse the existing midpoint logic from `_getPoseEye()` — same timing,
+so transitions stay consistent with the rest of the figure). Arm-angle lerping
+(`_getPoseArms`) is no longer needed for a sprite; it can be ignored or removed,
+but the pose *timing* and triggers must be preserved.
 
-5. **Sparkline in canvas.** The session bankroll sparkline is a separate HTML
-   canvas in the stats panel. Could be moved to a persistent corner of the main
-   canvas if the stats panel ever goes away.
+### Procedural idle animation (the "life")
+Applied as transforms on the sprite each frame inside the draw — no extra art:
+- **Breathing:** a slow vertical sine on the sprite's y (or a tiny scaleY around
+  the torso). Suggested: `Math.sin(now * 0.0018) * 1.5` px amplitude. Subtle.
+- **Sway:** a second, slower sine on x or a tiny rotation, offset in frequency so
+  it doesn't look mechanical, e.g. `Math.sin(now * 0.0011) * 0.8` px.
+- **Blink:** if `DEALER_BLINK_SRC` exists, swap to it for ~110ms on a random
+  interval of 2.5-6s, only while in `IDLE`. If absent, skip.
+- All idle motion must **pause/instant-settle under `prefers-reduced-motion`**,
+  consistent with the rest of the animation system.
+- Idle motion applies during `IDLE`; during action poses (`DEALING`/`WIN`/`LOSE`)
+  it can continue subtly or pause — pick whatever reads calmest, but never let it
+  fight the pose.
+
+### Acceptance
+- With sprite constants empty: game runs identically to now (robot fallback).
+- With sprite constants populated: the human dealer renders seated correctly at
+  the felt edge, crisp pixels, breathing + swaying gently when idle, blinking if
+  a blink frame is supplied, and changing pose on deal/win/lose exactly when the
+  robot did — because the triggers are untouched.
+- No change to any game logic, timing of rounds, or other animations.
+
+### Build protocol
+1. Read this SPEC and `STRATEGY.md` fully before editing.
+2. Confirm understanding of the current `drawDealer()` / pose system and state
+   the plan **before** writing code; wait for go-ahead.
+3. Make the rendering change only. Keep the robot fallback intact.
+4. After implementing: note what changed and how to test it (including how to
+   drop in the dealer image constants), then stop for feedback.
+5. Never add libraries, network calls, or build steps. Single file stays single.
 
 ---
 
-## Non-goals (permanent)
+## Later / Open Items (not now)
 
-- No server, no accounts, no network.
-- No external libraries or build tools.
-- No monetisation, ads, or tracking of any kind.
-- No fancy 3D card animations or physics — pixel art, flat, readable.
+- **Multiple dealers** (robot, human variants) selectable — the sprite model
+  above is designed to extend to this: more constant sets + a picker. Defer until
+  the single human dealer works.
+- **Background polish:** subtle animated detail (smoke curl, lamp flicker) if
+  performance allows.
+- **Index deviations:** setting is toggleable but not yet wired into the hint
+  engine (Fab 4 surrenders, Insurance at TC>=3, 16v10 stand at TC>=0, etc.).
+- **Mobile/touch:** chip-bar targets are 32px circles — usable, could enlarge on
+  phones.
+- **Canvas sparkline:** currently a separate HTML canvas in the stats panel.
