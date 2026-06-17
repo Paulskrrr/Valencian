@@ -1384,8 +1384,49 @@ const DEALER_IMGS = {
   dealing: _loadSrc(DEALER_DEALING_SRC),
   win:     _loadSrc(DEALER_WIN_SRC),
   lose:    _loadSrc(DEALER_LOSE_SRC),
-  blink:   _loadSrc(DEALER_BLINK_SRC),
+  blink:   null, // generated from idle once loaded
 };
+
+function _makeDealer1BlinkCanvas(idleCanvas) {
+  const w = idleCanvas.width, h = idleCanvas.height;
+  const bc = document.createElement('canvas');
+  bc.width = w; bc.height = h;
+  const bx = bc.getContext('2d');
+  bx.drawImage(idleCanvas, 0, 0);
+  const imgData = bx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+  const sX = Math.round(w * 0.44), sY = Math.round(h * 0.28);
+  const si = (sY * w + sX) * 4;
+  const skinR = d[si], skinG = d[si+1], skinB = d[si+2];
+  // Eye centres measured from source art (narrow horizontal slits)
+  const eyes = [
+    { cx: w * 0.443, cy: h * 0.239, rx: w * 0.025, ry: h * 0.010 },
+    { cx: w * 0.558, cy: h * 0.239, rx: w * 0.025, ry: h * 0.010 },
+  ];
+  bx.fillStyle = `rgb(${skinR},${skinG},${skinB})`;
+  for (const e of eyes) {
+    bx.beginPath();
+    bx.ellipse(e.cx, e.cy, e.rx, e.ry, 0, 0, Math.PI * 2);
+    bx.fill();
+    bx.strokeStyle = '#1A0800';
+    bx.lineWidth = Math.max(1, Math.round(h * 0.005));
+    bx.beginPath();
+    bx.moveTo(e.cx - e.rx, e.cy);
+    bx.quadraticCurveTo(e.cx, e.cy + e.ry * 0.6, e.cx + e.rx, e.cy);
+    bx.stroke();
+  }
+  return bc;
+}
+
+(function _initDealer1Blink() {
+  const check = setInterval(() => {
+    if (DEALER_IMGS.idle && DEALER_IMGS.idle._canvas) {
+      clearInterval(check);
+      DEALER_IMGS.blink = { _canvas: _makeDealer1BlinkCanvas(DEALER_IMGS.idle._canvas) };
+      scheduleRender();
+    }
+  }, 200);
+})();
 
 // ─── DEALER 2 IMGS ───────────────────────────────────────────────────────────
 
@@ -1553,7 +1594,7 @@ function _drawDealerSprite(imgs) {
 
   // Idle micro-animation — pause during action poses
   const inAction = dealerPose !== DEALER_POSE.IDLE;
-  const breathY = (!reduced && !inAction) ? Math.sin(now * 0.0018) * 1.5 : 0;
+  const breathY = (!reduced && !inAction) ? Math.sin(now * 0.0023) * 1.5 : 0;
 
   // Scale so the bottom of the sprite sits at FELT_TOP + a few px; the table
   // (drawn after dealer in render()) covers the overlap, grounding the figure.
