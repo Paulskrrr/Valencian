@@ -973,7 +973,7 @@ function advanceHand() {
   if (next<state.hands.length) {
     state.activeHandIdx=next; state.messageWrong=false;
     setMsg('Play next hand. Total: '+handTotal(activeHand().cards).total);
-  } else { dealerPlay(); }
+  } else { setTimeout(() => dealerPlay(), 900); }
 }
 function dealerPlay() {
   state.phase=PHASE.DEALER;
@@ -1195,16 +1195,16 @@ function playSound(type) {
   if (type === 'deal') {
     // Noise through swept lowpass: starts bright (card edge impact) → damps fast (felt)
     const sr = ac.sampleRate;
-    const dur = 0.08;
+    const dur = 0.05;
     const buf = ac.createBuffer(1, Math.ceil(sr * dur), sr);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     const lp = ac.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(7000, now);
-    lp.frequency.exponentialRampToValueAtTime(280, now + 0.032);
+    lp.frequency.setValueAtTime(2800, now);
+    lp.frequency.exponentialRampToValueAtTime(180, now + 0.032);
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.55, now);
+    g.gain.setValueAtTime(0.12, now);
     g.gain.exponentialRampToValueAtTime(0.001, now + dur);
     const src = ac.createBufferSource();
     src.buffer = buf;
@@ -1216,8 +1216,8 @@ function playSound(type) {
     osc2.type = 'sine';
     osc2.frequency.setValueAtTime(110, now);
     osc2.frequency.exponentialRampToValueAtTime(42, now + 0.04);
-    g2.gain.setValueAtTime(0.14, now);
-    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+    g2.gain.setValueAtTime(0.05, now);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
     osc2.start(now); osc2.stop(now + 0.05);
   } else if (type === 'win') {
     // Rising major arpeggio: C5 E5 G5
@@ -1265,8 +1265,8 @@ const ctx = canvas.getContext('2d');
 
 const CW = 640, CH = 360;
 const CARD_W = 44, CARD_H = 60, CARD_STEP = 50;
-const DEALER_Y = 160, PLAYER_Y = 226;
-const SHOE_X = 405, SHOE_Y = 120;
+const DEALER_Y = 240, PLAYER_Y = 298;
+const SHOE_X = 530, SHOE_Y = 232;
 const FELT = '#2D5A3D', RAIL = '#8B4513', ROOM = '#1A1008';
 const CARD_FACE = '#F5F0E8', CARD_RED = '#C41E3A', GOLD = '#D4A017';
 
@@ -1451,7 +1451,7 @@ function _drawDealerSprite() {
 
   // Scale so the bottom of the sprite sits at FELT_TOP + a few px; the table
   // (drawn after dealer in render()) covers the overlap, grounding the figure.
-  const displayH = FELT_TOP + 12;
+  const displayH = FELT_TOP + 14;
   const displayW = Math.round(src.width * displayH / src.height);
   const dx = Math.round(CW / 2 - displayW / 2);
   const dy = Math.round(breathY);
@@ -1472,7 +1472,7 @@ function _drawDealerRobot() {
   // Seat the figure so its vest base (~y69) lands just above FELT_TOP.
   // translate_y = FELT_TOP - 2 - 1.7*(69-40) ≈ 139 for FELT_TOP=190.
   ctx.save();
-  ctx.translate(290, 139);
+  ctx.translate(290, 159);
   ctx.scale(1.7, 1.7);
   ctx.translate(-290, -40);
   // Brass automaton croupier in lounge livery — warm bronze + burgundy + gold
@@ -1552,42 +1552,79 @@ function _drawDealerRobot() {
 }
 
 // Felt geometry — table occupies the lower ~60% of the screen
-const FELT_TOP = 190, FELT_H = 200;
+const FELT_TOP = 210;
+const TABLE_NEAR_Y = 355;
+const TABLE_CX = 320;
+const TABLE_FAR_W = 380;
+const TABLE_NEAR_W = 520;
 
 function drawTable() {
-  // Felt oval
-  roundRect(ctx, 70, FELT_TOP, 500, FELT_H, 42);
-  ctx.fillStyle = FELT;
-  ctx.fill();
+  // Build the outer table shape — perspective D: narrow at dealer (top), wide at player (near)
+  function outerPath() {
+    const p = new Path2D();
+    p.moveTo(TABLE_CX - TABLE_FAR_W/2, FELT_TOP);
+    p.ellipse(TABLE_CX, FELT_TOP, TABLE_FAR_W/2, 20, 0, Math.PI, 0, false);
+    p.lineTo(TABLE_CX + TABLE_NEAR_W/2, TABLE_NEAR_Y);
+    p.ellipse(TABLE_CX, TABLE_NEAR_Y, TABLE_NEAR_W/2, 24, 0, 0, Math.PI, false);
+    p.closePath();
+    return p;
+  }
 
-  // Rail border — deep mahogany to match the wood paneling
-  roundRect(ctx, 70, FELT_TOP, 500, FELT_H, 42);
-  ctx.strokeStyle = '#4A2C18';
+  function insetPath(xi, yi) {
+    const p = new Path2D();
+    p.moveTo(TABLE_CX - (TABLE_FAR_W/2 - xi), FELT_TOP + yi);
+    p.ellipse(TABLE_CX, FELT_TOP + yi, TABLE_FAR_W/2 - xi, 20 - yi/2, 0, Math.PI, 0, false);
+    p.lineTo(TABLE_CX + (TABLE_NEAR_W/2 - xi), TABLE_NEAR_Y - yi);
+    p.ellipse(TABLE_CX, TABLE_NEAR_Y - yi, TABLE_NEAR_W/2 - xi, 24 - yi/2, 0, 0, Math.PI, false);
+    p.closePath();
+    return p;
+  }
+
+  const outer = outerPath();
+
+  // Drop shadow
+  ctx.save();
+  ctx.translate(0, 5);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fill(outer);
+  ctx.restore();
+
+  // Felt fill — clipped to shape
+  ctx.save();
+  ctx.clip(outer);
+  const grad = ctx.createRadialGradient(TABLE_CX, FELT_TOP + 60, 30, TABLE_CX, FELT_TOP + 80, 260);
+  grad.addColorStop(0, '#3A7050');
+  grad.addColorStop(0.6, '#2D5A3D');
+  grad.addColorStop(1, '#1E3D28');
+  ctx.fillStyle = grad;
+  ctx.fillRect(TABLE_CX - TABLE_NEAR_W/2 - 5, FELT_TOP - 25, TABLE_NEAR_W + 10, TABLE_NEAR_Y - FELT_TOP + 50);
+  ctx.restore();
+
+  // Rail — outer stroke
+  ctx.save();
+  ctx.strokeStyle = '#7A3A10';
   ctx.lineWidth = 10;
-  ctx.stroke();
+  ctx.stroke(outer);
+  ctx.strokeStyle = '#8B4513';
+  ctx.lineWidth = 7;
+  ctx.stroke(outer);
+  ctx.restore();
 
-  // Brass inner trim ring (echoes the lamp fittings)
-  roundRect(ctx, 75, FELT_TOP+5, 490, FELT_H-10, 38);
-  ctx.strokeStyle = '#B88A3C';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  // Brass trim
+  ctx.save();
+  ctx.strokeStyle = '#D4A017';
+  ctx.lineWidth = 2.5;
+  ctx.stroke(insetPath(10, 8));
+  ctx.restore();
 
-  // Felt stitching (dashed)
-  roundRect(ctx, 84, FELT_TOP+14, 472, FELT_H-28, 32);
-  ctx.strokeStyle = '#254830';
-  ctx.lineWidth = 0.5;
-  ctx.setLineDash([5, 5]);
-  ctx.stroke();
+  // Stitching
+  ctx.save();
+  ctx.strokeStyle = '#1A3D28';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 5]);
+  ctx.stroke(insetPath(18, 14));
   ctx.setLineDash([]);
-
-  // Lamplight vignette — warm center, dark corners (over felt only)
-  const cy = FELT_TOP + FELT_H/2;
-  const vg = ctx.createRadialGradient(320, cy, 40, 320, cy, 220);
-  vg.addColorStop(0,   'rgba(255,175,55,0.00)');
-  vg.addColorStop(0.5, 'rgba(255,175,55,0.00)');
-  vg.addColorStop(1,   'rgba(0,0,0,0.44)');
-  ctx.fillStyle = vg;
-  ctx.fillRect(70, FELT_TOP, 500, FELT_H);
+  ctx.restore();
 
   // Shoe widget — compact stack of card backs beside the dealer
   for (let i = 3; i >= 0; i--) {
@@ -1860,7 +1897,7 @@ const CHIP_BAR_COLORS = [
 ];
 
 function chipBarY() {
-  return CH - 28; // fixed near canvas bottom; independent of FELT_H which extends off-screen
+  return CH - 28; // fixed near canvas bottom; independent of table geometry
 }
 
 function drawChipBar() {
