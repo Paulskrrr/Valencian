@@ -20,9 +20,8 @@
   }
   #canvas-wrap {
     position: relative;
-    /* Fills viewport while maintaining 16:9 */
-    width: min(100vw, calc(100vh * 16/9));
-    height: min(100vh, calc(100vw * 9/16));
+    width: 100vw;
+    height: 100vh;
   }
   #canvas {
     position: absolute;
@@ -1536,28 +1535,28 @@ function _drawDealerRobot() {
 }
 
 // Felt geometry — table occupies the lower ~60% of the screen
-const FELT_TOP = 150, FELT_H = 196; // 150 → 346 (fits within CH=360)
+const FELT_TOP = 150, FELT_H = 178;
 
 function drawTable() {
   // Felt oval
-  roundRect(ctx, 18, FELT_TOP, 604, FELT_H, 42);
+  roundRect(ctx, 70, FELT_TOP, 500, FELT_H, 42);
   ctx.fillStyle = FELT;
   ctx.fill();
 
   // Rail border — deep mahogany to match the wood paneling
-  roundRect(ctx, 18, FELT_TOP, 604, FELT_H, 42);
+  roundRect(ctx, 70, FELT_TOP, 500, FELT_H, 42);
   ctx.strokeStyle = '#4A2C18';
   ctx.lineWidth = 10;
   ctx.stroke();
 
   // Brass inner trim ring (echoes the lamp fittings)
-  roundRect(ctx, 23, FELT_TOP+5, 594, FELT_H-10, 38);
+  roundRect(ctx, 75, FELT_TOP+5, 490, FELT_H-10, 38);
   ctx.strokeStyle = '#B88A3C';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   // Felt stitching (dashed)
-  roundRect(ctx, 32, FELT_TOP+14, 576, FELT_H-28, 32);
+  roundRect(ctx, 84, FELT_TOP+14, 472, FELT_H-28, 32);
   ctx.strokeStyle = '#254830';
   ctx.lineWidth = 0.5;
   ctx.setLineDash([5, 5]);
@@ -1566,12 +1565,12 @@ function drawTable() {
 
   // Lamplight vignette — warm center, dark corners (over felt only)
   const cy = FELT_TOP + FELT_H/2;
-  const vg = ctx.createRadialGradient(290, cy, 40, 290, cy, 250);
+  const vg = ctx.createRadialGradient(320, cy, 40, 320, cy, 220);
   vg.addColorStop(0,   'rgba(255,175,55,0.00)');
   vg.addColorStop(0.5, 'rgba(255,175,55,0.00)');
   vg.addColorStop(1,   'rgba(0,0,0,0.44)');
   ctx.fillStyle = vg;
-  ctx.fillRect(18, FELT_TOP, 604, FELT_H);
+  ctx.fillRect(70, FELT_TOP, 500, FELT_H);
 
   // Shoe widget — compact stack of card backs beside the dealer
   for (let i = 3; i >= 0; i--) {
