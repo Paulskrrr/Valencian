@@ -978,7 +978,7 @@ function advanceHand() {
   if (next<state.hands.length) {
     state.activeHandIdx=next; state.messageWrong=false;
     setMsg('Play next hand. Total: '+handTotal(activeHand().cards).total);
-  } else { setTimeout(() => dealerPlay(), 900); }
+  } else { revealHole(); render(); setTimeout(() => dealerPlay(), 900); }
 }
 function dealerPlay() {
   state.phase=PHASE.DEALER;
