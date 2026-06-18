@@ -1824,10 +1824,11 @@ function drawTable() {
     ctx.textAlign = 'left';
   }
 
-  // Bankroll display — top-left, in the room area
+  // Bankroll display — left felt wing
   ctx.fillStyle = GOLD;
-  ctx.font = '9px monospace';
-  ctx.fillText(`Bank: ${state.bankroll}`, 26, 26);
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Bank: ${state.bankroll}`, 58, 232);
 }
 
 function drawCard(card, x, y, flipProg) {
@@ -2115,6 +2116,14 @@ function drawChipBar() {
   }
 
   ctx.globalAlpha = 1.0;
+
+  // Bet label on table rim
+  const betAmt = (state.phase === PHASE.IDLE || state.phase === PHASE.DONE) ? state.pendingBet : state.bet;
+  const locked = !(state.phase === PHASE.IDLE || state.phase === PHASE.DONE);
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = locked ? '#6B5030' : GOLD;
+  ctx.fillText(`Bet: ${betAmt}`, 430, 213);
 }
 
 function drawCountOverlay() {
