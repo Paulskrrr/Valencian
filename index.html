@@ -50,19 +50,6 @@
   .ovr-btn:hover { color: #D4A017; border-color: #8B4513; }
   .ovr-btn.active { color: #D4A017; border-color: #D4A017; background: rgba(30,20,5,0.85); }
 
-  /* ── message + insurance — overlaid at bottom of canvas ── */
-  #message {
-    position: absolute;
-    top: 50%;
-    left: 0; right: 0;
-    color: #D4A017;
-    text-align: center;
-    font-size: 0.82rem;
-    pointer-events: none;
-    z-index: 5;
-  }
-  #message.wrong { color: #e07070; }
-
   /* ── insurance bar ── */
   #insurance-bar {
     position: absolute;
@@ -234,7 +221,6 @@
     <button id="btn-stats"    class="ovr-btn" title="Stats [T]">§</button>
     <button id="btn-settings" class="ovr-btn" title="Settings [G]">⚙</button>
   </div>
-  <div id="message">Place your bet and deal.</div>
   <div id="insurance-bar">
     <span style="color:#D4A017">Insurance? &nbsp;</span>
     <span id="btn-ins-yes" style="color:#D4A017;cursor:pointer" onclick="takeInsurance()"><u>Y</u>es</span>
@@ -2405,10 +2391,7 @@ function toggleStats()  {
   renderStats(); updateButtons();
 }
 
-function syncMsg() {
-  const el=document.getElementById('message'); el.textContent=state.message;
-  el.className=state.messageWrong?'wrong':'';
-}
+function syncMsg() { /* message display removed */ }
 function refresh() { render(); updateButtons(); syncMsg(); }
 
 // Chip buttons (hidden HTML — kept for accessibility/keyboard; canvas chip bar handles mouse)
