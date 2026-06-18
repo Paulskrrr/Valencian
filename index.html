@@ -1480,7 +1480,7 @@ function _makeDealer2BlinkCanvas(idleCanvas) {
 }
 
 function _makeClosedMouthCanvas(idleCanvas, cfg) {
-  const { cx, cy, rx, ry, skinFx, skinFy } = cfg;
+  const { cx, cy, rx, ry, skinFx, skinFy, lipColor = '#3A1808' } = cfg;
   const w = idleCanvas.width, h = idleCanvas.height;
   const bc = document.createElement('canvas'); bc.width = w; bc.height = h;
   const bx = bc.getContext('2d');
@@ -1490,7 +1490,7 @@ function _makeClosedMouthCanvas(idleCanvas, cfg) {
   const [sR, sG, sB] = [d[si], d[si+1], d[si+2]];
   bx.fillStyle = `rgb(${sR},${sG},${sB})`;
   bx.beginPath(); bx.ellipse(cx*w, cy*h, rx*w, ry*h, 0, 0, Math.PI*2); bx.fill();
-  bx.strokeStyle = '#3A1808'; bx.lineWidth = Math.max(1, Math.round(h * 0.006));
+  bx.strokeStyle = lipColor; bx.lineWidth = Math.max(1, Math.round(h * 0.006));
   bx.beginPath();
   bx.moveTo((cx - rx) * w, cy * h);
   bx.quadraticCurveTo(cx * w, (cy + ry * 0.4) * h, (cx + rx) * w, cy * h);
@@ -1520,8 +1520,9 @@ function _makeClosedMouthCanvas(idleCanvas, cfg) {
     DEALER2_IMGS.lose = fakeImg;
     DEALER2_IMGS.blink = { _canvas: _makeDealer2BlinkCanvas(oc) };
     DEALER2_IMGS.mouthClosed = _makeClosedMouthCanvas(oc, {
-      cx: 0.495, cy: 0.540, rx: 0.060, ry: 0.025,
-      skinFx: 0.50, skinFy: 0.50,
+      cx: 0.475, cy: 0.388, rx: 0.055, ry: 0.015,
+      skinFx: 0.495, skinFy: 0.41,
+      lipColor: '#7A2B2A',
     });
     scheduleRender();
   };
@@ -1989,7 +1990,7 @@ function drawHand(cards, y, centerX, label, isActive, result, bet=null) {
     const { total, soft } = handTotal(visCards);
     const totalStr = (soft && total < 21 ? 'S' : '') + total;
     const lastCardX = startX + (numCards-1) * CARD_STEP;
-    const infoStr = bet != null ? totalStr + ' B:' + bet : totalStr;
+    const infoStr = totalStr;
     ctx.fillStyle = GOLD;
     ctx.font = '8px monospace';
     ctx.fillText(infoStr, lastCardX + CARD_W + 4, y + CARD_H/2 + 4);
