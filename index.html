@@ -1465,24 +1465,6 @@ function _makeDealer2BlinkCanvas(idleCanvas) {
   return bc;
 }
 
-function _makeClosedMouthCanvas(idleCanvas, cfg) {
-  const { cx, cy, rx, ry, skinFx, skinFy, lipColor = '#3A1808' } = cfg;
-  const w = idleCanvas.width, h = idleCanvas.height;
-  const bc = document.createElement('canvas'); bc.width = w; bc.height = h;
-  const bx = bc.getContext('2d');
-  bx.drawImage(idleCanvas, 0, 0);
-  const id = bx.getImageData(0, 0, w, h); const d = id.data;
-  const si = (Math.round(skinFy * h) * w + Math.round(skinFx * w)) * 4;
-  const [sR, sG, sB] = [d[si], d[si+1], d[si+2]];
-  bx.fillStyle = `rgb(${sR},${sG},${sB})`;
-  bx.beginPath(); bx.ellipse(cx*w, cy*h, rx*w, ry*h, 0, 0, Math.PI*2); bx.fill();
-  bx.strokeStyle = lipColor; bx.lineWidth = Math.max(1, Math.round(h * 0.006));
-  bx.beginPath();
-  bx.moveTo((cx - rx) * w, cy * h);
-  bx.quadraticCurveTo(cx * w, (cy + ry * 0.4) * h, (cx + rx) * w, cy * h);
-  bx.stroke();
-  return bc;
-}
 
 (function _initDealer2() {
   if (!DEALER2_IDLE_SRC) return;
@@ -1505,11 +1487,6 @@ function _makeClosedMouthCanvas(idleCanvas, cfg) {
     DEALER2_IMGS.win = fakeImg;
     DEALER2_IMGS.lose = fakeImg;
     DEALER2_IMGS.blink = { _canvas: _makeDealer2BlinkCanvas(oc) };
-    DEALER2_IMGS.mouthClosed = _makeClosedMouthCanvas(oc, {
-      cx: 0.475, cy: 0.388, rx: 0.055, ry: 0.015,
-      skinFx: 0.495, skinFy: 0.41,
-      lipColor: '#7A2B2A',
-    });
     scheduleRender();
   };
   img.src = DEALER2_IDLE_SRC;
@@ -1523,8 +1500,6 @@ let dealerPoseAnim = null; // { from, to, t0, dur }
 let _poseTimer = 0;
 let _blinkActive = false;
 let _blinkNext   = 0; // performance.now() timestamp for next blink
-let _smileActive = false;
-let _smileNext   = 0;
 
 function setDealerPose(to, dur=300) {
   dealerPoseAnim = { from: dealerPose, to, t0: performance.now(), dur };
@@ -1614,19 +1589,8 @@ function _drawDealerSprite(imgs) {
       setTimeout(() => { _blinkActive = false; scheduleRender(); }, 110);
     }
   }
-  // Smile — only while idle, only for dealer 2 (has mouthClosed canvas)
-  if (!reduced && dealerPose === DEALER_POSE.IDLE && imgs.mouthClosed) {
-    if (!_smileActive && now >= _smileNext) {
-      _smileActive = true;
-      _smileNext = now + 6000 + Math.random() * 8000;
-      setTimeout(() => { _smileActive = false; scheduleRender(); }, 400);
-    }
-  }
-  // Source priority: blink > closed mouth (dealer 2 default) > normal pose canvas
-  let src;
-  if (_blinkActive && imgs.blink && imgs.blink._canvas) src = imgs.blink._canvas;
-  else if (!_smileActive && imgs.mouthClosed)           src = imgs.mouthClosed;
-  else                                                   src = _currentDealerCanvas();
+  const src = (_blinkActive && imgs.blink && imgs.blink._canvas)
+    ? imgs.blink._canvas : _currentDealerCanvas();
 
   // Idle micro-animation — pause during action poses
   const inAction = dealerPose !== DEALER_POSE.IDLE;
@@ -2432,7 +2396,6 @@ document.getElementById('btn-shuffle').addEventListener('click', manualShuffle);
 document.getElementById('btn-char-swap').addEventListener('click', () => {
   CONFIG.dealerChar = CONFIG.dealerChar === 0 ? 1 : 0;
   _blinkActive = false; _blinkNext = 0;
-  _smileActive = false; _smileNext = 0;
   scheduleRender();
 });
 document.getElementById('btn-ins-yes').addEventListener('click',()=>{ takeInsurance();   refresh(); });
