@@ -2434,14 +2434,14 @@ document.addEventListener('keydown', e=>{
   // Space: hit during player turn, else deal
   if (e.key===' ') {
     e.preventDefault();
-    if (!b('btn-hit').disabled)  { b('btn-hit').click();  return; }
-    if (!b('btn-deal').disabled) { b('btn-deal').click(); return; }
+    if (state.phase===PHASE.PLAYER && !b('btn-hit').disabled)  { b('btn-hit').click();  return; }
+    if ((state.phase===PHASE.IDLE||state.phase===PHASE.DONE) && !b('btn-deal').disabled) { b('btn-deal').click(); return; }
     return;
   }
   // Enter: stand during player turn, else deal
   if (e.key==='Enter') {
-    if (!b('btn-stand').disabled) { b('btn-stand').click(); return; }
-    if (!b('btn-deal').disabled)  { b('btn-deal').click();  return; }
+    if (state.phase===PHASE.PLAYER && !b('btn-stand').disabled) { b('btn-stand').click(); return; }
+    if ((state.phase===PHASE.IDLE||state.phase===PHASE.DONE) && !b('btn-deal').disabled) { b('btn-deal').click(); return; }
     return;
   }
   const k=e.key.toUpperCase();
