@@ -27,12 +27,13 @@ Run this after every set of changes before committing.
 ### Rendering
 - **Canvas:** 640×360 logical pixels (`CW`/`CH`), supersampled at 2× (physical 1280×720). `image-rendering: pixelated`. Everything game-related draws on this canvas; stats/settings/insurance are HTML overlays.
 - **Render loop:** `scheduleRender()` queues one `requestAnimationFrame`; `renderFrame()` draws everything. Animations re-call `scheduleRender()` while active. Use `render()` (immediate) for instant UI updates like bankroll changes.
-- **Draw order (back to front):** background → stage fade overlay → dealer sprite → table (felt/rail/rim) → bell → item tray items → bankroll stacks → bet circle → shoe → cards → chip bar → banners/overlays.
+- **Draw order (back to front):** static scene (background + felt/rail/rim, cached) → stage fade overlay → dealer sprite → table dynamic layer (bell → bankroll stacks → bet circle → shoe) → cards → banners/overlays.
+- **Static scene cache:** `drawStaticScene()` caches background + felt/rail to an offscreen canvas keyed on `CONFIG.dealerChar`. Invalidate by setting `_staticLayer = null` before calling `scheduleRender()` when visual state changes (e.g. bg image loads).
 
 ### Key Constants
 ```
 TABLE_CX=320, TABLE_TOP_Y=208, TABLE_BOT_Y=334, TABLE_HALF_W=248
-BELL_X=148, BELL_Y=204
+BELL_X=148, BELL_Y=200
 CW=640, CH=360
 ```
 
@@ -46,7 +47,7 @@ Four stages, each with a background image, dealer sprite, and unlock threshold:
 | `CONFIG.dealerChar` | Dealer | Background | Unlock |
 |---|---|---|---|
 | 0 | Default male (dealer 1) | Jazz lounge | default |
-| 1 | Female beach dealer 2 | Beach bar | 1500 |
+| 1 | Female beach dealer 2 | Beach bar | 1100 |
 | 2 | Blonde male (dealer 3) | Backyard pool | 2000 |
 | 3 | Alien (dealer 4) | Moon base | 2500 |
 
@@ -68,7 +69,7 @@ Idle micro-animation: breathing (`Math.sin(now * 0.0018) * 1.5` px vertical) and
 - All drawn primitives must use `fillRect` where possible — no `ctx.arc`/`ctx.ellipse` for visible game shapes. Arcs are only acceptable for glow/pulse effects.
 - `_tablePath` uses few steps deliberately for chunky stair-stepped edges.
 - Bell (`drawBell()`) is drawn entirely with per-row `fillRect` calls.
-- Chips use a 12-gon polygon (`_chipPoly`).
+- Chips use a 12-gon polygon style (drawn in `_drawBankrollStacks` / `_drawBetCircle`).
 
 ### Item Tray
 5 positions along the right shoulder Bezier curve of the felt, offset ~25px inward: `ITEM_SLOT_POSITIONS`. No visible markers. `drawWhiskey()` draws at slot 0. No slot circles/markers should ever be drawn.
@@ -83,9 +84,9 @@ HTML overlay (`#shop-sidebar`), opens on bell click. Centered vertically (`top:5
 
 ## Git Workflow
 
-Development branch: `claude/inspiring-noether-j53p4d`
+Development branch: `claude/sweet-cray-kjo4zg`
 
 Always push with:
 ```bash
-git push -u origin claude/inspiring-noether-j53p4d
+git push -u origin claude/sweet-cray-kjo4zg
 ```
