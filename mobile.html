@@ -208,6 +208,39 @@
     transition: opacity 0.2s, transform 0.2s;
   }
   #banner.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  #banner.bj {
+    font-size: 1.9rem;
+    text-shadow: 0 0 14px rgba(255,205,60,0.95), 0 0 30px rgba(255,170,20,0.6), 0 2px 6px rgba(0,0,0,0.85);
+    animation: bjPop 700ms cubic-bezier(.18,.8,.3,1.1);
+  }
+  @keyframes bjPop {
+    0%   { transform: translate(-50%,-50%) scale(0.3) rotate(-6deg); }
+    55%  { transform: translate(-50%,-50%) scale(1.3) rotate(3deg); }
+    100% { transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+  }
+
+  /* ── blackjack celebration FX ── */
+  #fx { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+  .bj-flash {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 42%, rgba(255,212,80,0.6), rgba(255,180,30,0.15) 45%, transparent 70%);
+    animation: bjFlash 720ms ease-out forwards;
+  }
+  @keyframes bjFlash { 0%{opacity:0;} 16%{opacity:1;} 100%{opacity:0;} }
+  .coin {
+    position: absolute;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff0b8, #ecbb22 55%, #a8780c);
+    border: 1px solid #7a5606;
+    box-shadow: 0 0 7px rgba(255,205,60,0.8);
+    will-change: transform, opacity;
+  }
+  .coin.spark {
+    background: none; border: none; box-shadow: none;
+    width: auto; height: auto;
+    color: #ffe27a; font-size: 16px; line-height: 1;
+    text-shadow: 0 0 8px rgba(255,210,80,0.9);
+  }
 
   #msg {
     position: absolute;
@@ -270,6 +303,7 @@
     <div class="row" id="dealer-row"></div>
     <div class="row" id="player-row"></div>
     <div id="banner"></div>
+    <div id="fx"></div>
     <div id="msg"></div>
   </div>
 
@@ -519,12 +553,14 @@ function settleAll() {
   const anyBJ = hands.some(h => h.result === 'bj');
   const allPush = hands.every(h => h.result === 'push');
   let txt, col;
-  if (anyBJ && sum > 0) { txt = 'BLACKJACK +' + sum; col = 'var(--gold)'; }
+  const bjWin = anyBJ && sum > 0;
+  if (bjWin) { txt = 'BLACKJACK +' + sum; col = 'var(--gold)'; }
   else if (allPush) { txt = 'PUSH'; col = '#9090d0'; }
   else if (sum > 0) { txt = 'WIN +' + sum; col = '#60C060'; }
   else if (sum < 0) { txt = 'LOSE ' + sum; col = '#E06060'; }
   else { txt = 'PUSH'; col = '#9090d0'; }
-  showBanner(txt, col);
+  showBanner(txt, col, bjWin);
+  if (bjWin) celebrateBlackjack();
   setMsg('Next hand dealing…');
 
   setTimeout(() => { phase = 'idle'; newHand(); }, AUTO_DEAL_MS);
@@ -613,13 +649,54 @@ function render() {
 
 function setMsg(t) { $('msg').textContent = t; }
 let bannerTimer = null;
-function showBanner(text, color) {
+function showBanner(text, color, bj) {
   const b = $('banner');
   b.textContent = text;
   b.style.color = color;
+  b.classList.toggle('bj', !!bj);
+  b.classList.remove('show');
+  void b.offsetWidth;          // restart the entrance animation each round
   b.classList.add('show');
 }
-function hideBanner() { $('banner').classList.remove('show'); }
+function hideBanner() { $('banner').classList.remove('show', 'bj'); }
+
+function celebrateBlackjack() {
+  const stage = $('stage'), fx = $('fx');
+  fx.innerHTML = '';
+  const flash = document.createElement('div');
+  flash.className = 'bj-flash';
+  fx.appendChild(flash);
+
+  const cx = stage.clientWidth / 2;
+  const cy = stage.clientHeight * 0.42;
+  const N = 30;
+  for (let i = 0; i < N; i++) {
+    const p = document.createElement('div');
+    const isSpark = Math.random() < 0.35;
+    p.className = 'coin' + (isSpark ? ' spark' : '');
+    if (isSpark) p.textContent = '✦';
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    fx.appendChild(p);
+
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    const ang = (0.18 + Math.random() * 0.64) * Math.PI;   // upward fan
+    const dist = 70 + Math.random() * 170;
+    const dx = Math.cos(ang) * dist * dir;
+    const peakY = -Math.sin(ang) * dist - (30 + Math.random() * 70);
+    const fallY = peakY + 240 + Math.random() * 160;       // arc back down
+    const spin = dir * (360 + Math.random() * 540);
+    const dur = 950 + Math.random() * 550;
+
+    if (p.animate) p.animate([
+      { transform: 'translate(-50%,-50%) translate(0,0) scale(0.4) rotate(0deg)', opacity: 1 },
+      { transform: `translate(-50%,-50%) translate(${dx}px,${peakY}px) scale(1) rotate(${spin * 0.4}deg)`, opacity: 1, offset: 0.4 },
+      { transform: `translate(-50%,-50%) translate(${dx * 1.15}px,${fallY}px) scale(0.85) rotate(${spin}deg)`, opacity: 0 },
+    ], { duration: dur, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+  }
+  if (navigator.vibrate) { try { navigator.vibrate([18, 40, 22]); } catch (e) {} }
+  setTimeout(() => { fx.innerHTML = ''; }, 1800);
+}
 
 function updateButtons() {
   const live = phase === 'player' && !busy;
