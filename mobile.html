@@ -111,72 +111,102 @@ function mulberry32(a) {
 
 let solids = [];   // {x,y,w,h} landable from the top; side contact = death
 let spikes = [];   // {x,y,w,h} hazard
+let cannons = [];  // {x,y,t,period,speed} fire balls leftward
+let balls = [];    // live cannonballs {x,y,vx}
+let monsters = []; // {kind,baseX,x,y,w,h,...} patrol / charge
+let cling = false, clingWall = null;   // wall-jump state
 let goalX = 0;
 
 function buildLevel() {
   const rng = mulberry32(0x5EED1234);
-  solids = []; spikes = [];
+  solids = []; spikes = []; cannons = []; monsters = [];
   const GY = GROUND_Y;
-  const ground = (x, w) => solids.push({ x, y: GY, w, h: VH, ground: true });
-  const block  = (x, y, w, h) => solids.push({ x, y, w, h });
-  const plat   = (x, y, w) => solids.push({ x, y, w, h: 12, plat: true });
-  const spike  = (x, w) => spikes.push({ x, y: GY - 16, w, h: 16 });
+  const ground  = (x, w) => solids.push({ x, y: GY, w, h: VH, ground: true });
+  const block   = (x, y, w, h) => solids.push({ x, y, w, h });
+  const plat    = (x, y, w) => solids.push({ x, y, w, h: 12, plat: true });
+  const wall    = (x, y, w, h) => solids.push({ x, y, w, h, wall: true });
+  const spike   = (x, w) => spikes.push({ x, y: GY - 16, w, h: 16 });
+  const cannon  = (x, y) => cannons.push({ x, y, t: 0, period: 1.7, speed: 165 });
+  const walker  = (x, range) => monsters.push({ kind: 'walker', baseX: x, x, range, y: GY - 24, w: 22, h: 24, phase: 0, speed: 1.4 });
+  const charger = (x) => monsters.push({ kind: 'charger', baseX: x, x, y: GY - 26, w: 24, h: 26, phase: 0, speed: 150, triggered: false });
 
   // Reach budget (SPEED 300): single jump ~224px / 104px high, double ~382px.
-  // Every gap is capped well under the double-jump reach and every block
-  // under the single-jump height, so the level is hard but always solvable.
+  // Gaps stay under double reach, blocks under jump height; walls are taller
+  // than a normal jump on purpose (you must wall-climb them). Hard but solvable.
   let x = 0;
-  ground(x, 760); x += 760;             // generous safe start
+  ground(x, 820); x += 820;             // generous safe start
 
-  const END = 11000;
-  const pad = () => 150 + rng() * 110;  // clean landing/breather ground
+  const END = 20000;
+  const pad = () => 155 + rng() * 110;  // clean landing/breather ground
 
   while (x < END) {
     const r = rng();
 
-    if (r < 0.32) {
-      // GAP — clearable with one or (wider) two jumps
-      const gw = 130 + rng() * 150;     // 130–280  (< 382 double reach)
+    if (r < 0.13) {
+      // GAP
+      const gw = 130 + rng() * 150;     // 130–280
       x += gw;
       const lw = pad(); ground(x, lw); x += lw;
 
-    } else if (r < 0.54) {
-      // SPIKE STRIP on the ground — hop over it
-      const sw = 30 + rng() * 55;       // 30–85
+    } else if (r < 0.24) {
+      // SPIKE STRIP
+      const sw = 30 + rng() * 55;
       ground(x, sw + 50);
       spike(x + 12, sw);
       x += sw + 50;
       const lw = pad(); ground(x, lw); x += lw;
 
-    } else if (r < 0.72) {
-      // STEP BLOCK — jump ONTO it (hitting the side = death)
-      const bh = 40 + rng() * 52;       // 40–92  (< 104 jump height)
+    } else if (r < 0.35) {
+      // STEP BLOCK — jump ONTO it (side = death)
+      const bh = 40 + rng() * 52;       // <= jump height
       const bw = 40 + rng() * 60;
       ground(x, bw + 180);
       block(x + 24, GY - bh, bw, bh);
       x += bw + 180;
       const lw = pad(); ground(x, lw); x += lw;
 
-    } else if (r < 0.88) {
-      // GAP with a floating PLATFORM aid (double-jump skips, or step on it)
-      const gw = 190 + rng() * 85;      // 190–275
+    } else if (r < 0.46) {
+      // GAP + one-way floating PLATFORM aid
+      const gw = 190 + rng() * 85;
       const ph = 70 + rng() * 55;
       const pw = 78 + rng() * 46;
       plat(x + (gw - pw) * (0.4 + rng() * 0.2), GY - ph, pw);
       x += gw;
       const lw = pad(); ground(x, lw); x += lw;
 
+    } else if (r < 0.62) {
+      // WALL — too tall for a normal jump; tap against it to wall-climb over
+      const wh = 116 + rng() * 70;      // 116–186 (> 104 jump height)
+      const ww = 26 + rng() * 16;
+      ground(x, ww + 240);
+      wall(x + 64, GY - wh, ww, wh);
+      x += ww + 240;
+      const lw = pad(); ground(x, lw); x += lw;
+
+    } else if (r < 0.74) {
+      // CANNON — fires balls at you along the ground; jump them
+      ground(x, 360);
+      cannon(x + 318, GY - 14);
+      x += 360;
+      const lw = pad(); ground(x, lw); x += lw;
+
+    } else if (r < 0.88) {
+      // MONSTER — patrolling walker or charging beast; jump over it
+      if (rng() < 0.65) { ground(x, 360); walker(x + 185, 52); x += 360; }
+      else              { ground(x, 420); charger(x + 250);     x += 420; }
+      const lw = pad(); ground(x, lw); x += lw;
+
     } else {
-      // BREATHER (occasionally a small spike to keep you honest)
+      // BREATHER
       const fw = 150 + rng() * 160;
       ground(x, fw);
       if (rng() < 0.25) spike(x + fw * 0.5, 24 + rng() * 22);
       x += fw;
     }
   }
-  ground(x, 700);
-  goalX = x + 260;
-  ground(x + 700, 400);
+  ground(x, 760);
+  goalX = x + 280;
+  ground(x + 760, 420);
 }
 buildLevel();
 
@@ -193,12 +223,17 @@ function reset() {
   player.jumps = 2;
   player.grounded = true;
   bestX = 0;
+  cling = false; clingWall = null;
+  balls = [];
+  for (const c of cannons) c.t = 0;
+  for (const m of monsters) { m.phase = 0; m.triggered = false; m.x = m.baseX; }
 }
 reset();
 
 function jump() {
   if (state === 'ready') { state = 'run'; return; }
   if (state === 'dead' || state === 'win') { reset(); state = 'run'; return; }
+  if (cling) { player.vy = -JUMP_V; player.jumps = 1; return; }   // wall kick (climb)
   if (player.jumps > 0) {
     player.vy = -JUMP_V;
     player.jumps--;
@@ -221,18 +256,25 @@ function die() {
 /* ───────── physics step (fixed sub-steps to avoid tunnelling) ───────── */
 function step(dt) {
   if (state !== 'run') return;
-  player.x += SPEED * dt;
-  player.vy += GRAV * dt;
+
+  if (!cling) player.x += SPEED * dt;                 // pinned while wall-clinging
+
+  if (cling) {                                        // slow slide down the wall
+    player.vy += GRAV * 0.4 * dt;
+    if (player.vy > 130) player.vy = 130;
+  } else {
+    player.vy += GRAV * dt;
+  }
   player.y += player.vy * dt;
 
   const prevBottom = player.y + PH - player.vy * dt;  // approx previous bottom
   player.grounded = false;
 
-  const px = player.x, pr = player.x + PW;
+  let px = player.x, pr = player.x + PW;
+  let newCling = false, newWall = null;
   for (const s of solids) {
     if (pr <= s.x || px >= s.x + s.w) continue;
     if (player.y + PH <= s.y - 0.5 || player.y >= s.y + s.h) continue;
-    // overlapping
     if (player.vy >= 0 && prevBottom <= s.y + 6) {
       // land on top
       player.y = s.y - PH;
@@ -240,12 +282,47 @@ function step(dt) {
       player.grounded = true;
       player.jumps = 2;
     } else if (s.plat) {
-      continue;   // one-way platform: pass through from below / the side
+      continue;          // one-way platform: pass through from below / the side
+    } else if (s.wall) {
+      newCling = true; newWall = s;   // cling to the wall instead of dying
     } else {
-      // ran into a wall side / underside, or fell into a pit edge
-      die();
+      die();             // wall side / underside / pit edge
       return;
     }
+  }
+  if (newCling) {
+    player.x = newWall.x - PW + 1;    // pin to the wall face (slight overlap holds the cling)
+    cling = true; clingWall = newWall;
+    if (player.jumps < 1) player.jumps = 1;
+    px = player.x; pr = player.x + PW;
+  } else {
+    cling = false; clingWall = null;
+  }
+
+  // cannons fire while the player is on the approach side
+  for (const c of cannons) {
+    if (player.x > c.x - VW * 1.05 && player.x < c.x) {
+      c.t += dt;
+      if (c.t >= c.period) { c.t -= c.period; balls.push({ x: c.x - 6, y: c.y, vx: -c.speed }); }
+    }
+  }
+  for (let i = balls.length - 1; i >= 0; i--) {
+    const b = balls[i];
+    b.x += b.vx * dt;
+    if (b.x < player.x - VW) { balls.splice(i, 1); continue; }
+    if (pr > b.x - 7 && px < b.x + 7 && player.y + PH > b.y - 7 && player.y < b.y + 7) { die(); return; }
+  }
+
+  // monsters
+  for (const m of monsters) {
+    if (m.kind === 'walker') {
+      m.phase += dt;
+      m.x = m.baseX + Math.sin(m.phase * m.speed) * m.range;
+    } else {                                  // charger: waits, then rushes left
+      if (!m.triggered && player.x > m.baseX - VW * 0.9) m.triggered = true;
+      if (m.triggered) m.x -= m.speed * dt;
+    }
+    if (pr > m.x && px < m.x + m.w && player.y + PH > m.y && player.y < m.y + m.h) { die(); return; }
   }
 
   // spikes
@@ -256,8 +333,7 @@ function step(dt) {
     return;
   }
 
-  // fell below the world (into a pit)
-  if (player.y > VH + 60) { die(); return; }
+  if (player.y > VH + 60) { die(); return; }   // fell into a pit
 
   if (player.x > bestX) bestX = player.x;
   if (player.x >= goalX) state = 'win';
@@ -332,6 +408,11 @@ function render() {
       ctx.fillStyle = '#000';
     } else if (s.plat) {
       ctx.fillRect(sx, s.y, s.w, s.h);
+    } else if (s.wall) {
+      ctx.fillStyle = '#000'; ctx.fillRect(sx, s.y, s.w, s.h);   // climbable wall
+      ctx.fillStyle = '#fff';
+      for (let ry = s.y + 6; ry < s.y + s.h - 3; ry += 10) ctx.fillRect(sx + 2, ry, s.w - 4, 2);
+      ctx.fillStyle = '#000';
     } else {
       ctx.fillRect(sx, s.y, s.w, s.h);               // block
     }
@@ -353,6 +434,38 @@ function render() {
       ctx.closePath();
       ctx.fill();
     }
+  }
+
+  // cannons
+  ctx.fillStyle = '#000';
+  for (const c of cannons) {
+    const sx = c.x - camX;
+    if (sx < -40 || sx > VW + 40) continue;
+    ctx.fillRect(sx - 6, c.y + 8, 22, GROUND_Y - (c.y + 8));   // pillar
+    ctx.fillRect(sx - 22, c.y - 8, 26, 18);                    // barrel (aims left)
+    ctx.beginPath(); ctx.arc(sx + 5, c.y + 1, 13, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // cannonballs
+  for (const b of balls) {
+    const sx = b.x - camX;
+    if (sx < -20 || sx > VW + 20) continue;
+    ctx.beginPath(); ctx.arc(sx, b.y, 7, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // monsters
+  for (const m of monsters) {
+    const sx = m.x - camX;
+    if (sx < -50 || sx > VW + 50) continue;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(sx, m.y, m.w, m.h);                                  // body
+    ctx.beginPath();                                                  // spiky top
+    ctx.moveTo(sx, m.y); ctx.lineTo(sx + m.w * 0.5, m.y - 9); ctx.lineTo(sx + m.w, m.y);
+    ctx.closePath(); ctx.fill();
+    ctx.fillRect(sx + 3, m.y + m.h, 4, 4);                            // feet
+    ctx.fillRect(sx + m.w - 7, m.y + m.h, 4, 4);
+    ctx.fillStyle = '#fff'; ctx.fillRect(sx + m.w - 9, m.y + 6, 4, 4); // eye
+    ctx.fillStyle = '#000';
   }
 
   // goal flag
