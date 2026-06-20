@@ -86,6 +86,33 @@
     filter: drop-shadow(0 6px 10px rgba(0,0,0,0.55));
     pointer-events: none;
   }
+  #speech {
+    position: absolute;
+    top: 4%;
+    left: 54%;
+    max-width: 42%;
+    z-index: 4;
+    background: var(--cream);
+    color: #1a1a1a;
+    font-size: 0.66rem;
+    font-weight: bold;
+    line-height: 1.15;
+    text-align: center;
+    padding: 7px 10px;
+    border-radius: 12px;
+    border: 2px solid #b8b0a0;
+    box-shadow: 0 3px 7px rgba(0,0,0,0.5);
+    pointer-events: none;
+  }
+  #speech::after {
+    content: '';
+    position: absolute;
+    left: 14px; bottom: -9px;
+    border-width: 10px 8px 0 0;
+    border-style: solid;
+    border-color: var(--cream) transparent transparent transparent;
+    filter: drop-shadow(0 2px 1px rgba(0,0,0,0.3));
+  }
   #felt {
     position: absolute;
     left: -4%; right: -4%;
@@ -238,6 +265,7 @@
   <div id="stage">
     <div id="bg"></div>
     <img id="dealer" alt="">
+    <div id="speech">Germany wins 22-0 today</div>
     <div id="felt"></div>
     <div class="row" id="dealer-row"></div>
     <div class="row" id="player-row"></div>
