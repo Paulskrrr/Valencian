@@ -60,6 +60,8 @@
   #topbar .stat .v { font-size: 0.82rem; color: var(--cream); font-weight: bold; }
   #topbar .stat .v.pos { color: #60C060; }
   #topbar .stat .v.neg { color: #E06060; }
+  #b-sound { background: none; border: none; font-size: 1.05rem; line-height: 1; padding: 4px 2px; margin-left: 2px; cursor: pointer; color: var(--gold); }
+  #b-sound.off { opacity: 0.4; filter: grayscale(1); }
 
 
   /* ── play stage ── */
@@ -325,6 +327,7 @@
     <div class="stats">
       <div class="stat"><div class="k">NET</div><div class="v" id="stat-net">+0</div></div>
       <div class="stat"><div class="k">TRUE</div><div class="v" id="stat-count">0</div></div>
+      <button id="b-sound" aria-label="Toggle sound">🔊</button>
     </div>
   </div>
 
@@ -475,6 +478,154 @@ function scheduleIdleChatter() {
   }, 11000 + Math.random() * 7000);
 }
 
+/* ───────── sound (procedural Web Audio — no assets, ported from index.html) ───────── */
+let soundOn = true;
+let _audioCtx = null;
+function getACtx() {
+  if (!_audioCtx) { try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  return _audioCtx;
+}
+function playSound(type) {
+  if (!soundOn) return;
+  const ac = getACtx(); if (!ac) return;
+  if (ac.state === 'suspended') ac.resume();
+  const now = ac.currentTime;
+
+  if (type === 'deal') {
+    // card edge impact: bright noise damped fast + low body thump
+    const dur = 0.05;
+    const buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(2800, now);
+    lp.frequency.exponentialRampToValueAtTime(180, now + 0.032);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.12, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    src.connect(lp); lp.connect(g); g.connect(ac.destination);
+    src.start(now); src.stop(now + dur);
+    const osc2 = ac.createOscillator(), g2 = ac.createGain();
+    osc2.connect(g2); g2.connect(ac.destination);
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(110, now);
+    osc2.frequency.exponentialRampToValueAtTime(42, now + 0.04);
+    g2.gain.setValueAtTime(0.05, now);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+    osc2.start(now); osc2.stop(now + 0.05);
+  } else if (type === 'flip') {
+    // soft card-turn: brief bandpass noise burst
+    const buf2 = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.035), ac.sampleRate);
+    const d2 = buf2.getChannelData(0);
+    for (let i = 0; i < d2.length; i++) d2[i] = Math.random() * 2 - 1;
+    const src2 = ac.createBufferSource(); src2.buffer = buf2;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(1200, now); bp.Q.value = 0.8;
+    const gf = ac.createGain();
+    gf.gain.setValueAtTime(0.07, now);
+    gf.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+    src2.connect(bp); bp.connect(gf); gf.connect(ac.destination);
+    src2.start(now); src2.stop(now + 0.04);
+  } else if (type === 'shuffle') {
+    // rapid card-riffle: several short noise bursts with slight pitch variation
+    for (let i = 0; i < 6; i++) {
+      const t = now + i * 0.055;
+      const dur = 0.04;
+      const buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let j = 0; j < d.length; j++) d[j] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(900 + i * 60, t); bp.Q.value = 1.2;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.08, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      src.connect(bp); bp.connect(g); g.connect(ac.destination);
+      src.start(t); src.stop(t + dur + 0.005);
+    }
+  } else if (type === 'chip') {
+    // crisp plastic chip click: noise transient + body resonance
+    const dur = 0.055;
+    const buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / ac.sampleRate * 130);
+    const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1800;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.3, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    src.connect(hp); hp.connect(g); g.connect(ac.destination);
+    src.start(now); src.stop(now + dur);
+    const osc2 = ac.createOscillator(), g2 = ac.createGain();
+    osc2.connect(g2); g2.connect(ac.destination);
+    osc2.type = 'sine'; osc2.frequency.value = 950;
+    g2.gain.setValueAtTime(0.05, now);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+    osc2.start(now); osc2.stop(now + 0.04);
+  } else if (type === 'lose') {
+    // descending sawtooth — the house collects
+    const osc = ac.createOscillator(), g = ac.createGain();
+    osc.connect(g); g.connect(ac.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(280, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.35);
+    g.gain.setValueAtTime(0.12, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc.start(now); osc.stop(now + 0.36);
+  } else if (type === 'push') {
+    // neutral single tone
+    const osc = ac.createOscillator(), g = ac.createGain();
+    osc.connect(g); g.connect(ac.destination);
+    osc.type = 'sine'; osc.frequency.value = 392;
+    g.gain.setValueAtTime(0.001, now);
+    g.gain.linearRampToValueAtTime(0.08, now + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc.start(now); osc.stop(now + 0.24);
+  } else if (type === 'bj') {
+    // short rising fanfare
+    [[523,0],[659,0.08],[784,0.16],[1047,0.24]].forEach(([freq, delay]) => {
+      const osc = ac.createOscillator(), g = ac.createGain();
+      osc.connect(g); g.connect(ac.destination);
+      osc.type = 'triangle'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.001, now + delay);
+      g.gain.linearRampToValueAtTime(0.18, now + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.35);
+      osc.start(now + delay); osc.stop(now + delay + 0.38);
+    });
+  } else if (type === 'kaching') {
+    // cash register "KA-CHING": mechanical clack + two bright bells ringing out
+    const dur0 = 0.04;
+    const nb = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur0), ac.sampleRate);
+    const nd = nb.getChannelData(0);
+    for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * Math.exp(-i / ac.sampleRate * 90);
+    const nhp = ac.createBiquadFilter(); nhp.type = 'highpass'; nhp.frequency.value = 2200;
+    const ng = ac.createGain();
+    ng.gain.setValueAtTime(0.22, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + dur0);
+    const nsrc = ac.createBufferSource(); nsrc.buffer = nb;
+    nsrc.connect(nhp); nhp.connect(ng); ng.connect(ac.destination);
+    nsrc.start(now); nsrc.stop(now + dur0);
+    // two bell strikes (low → high), each with metallic partials for the ring-out
+    [{ f: 784, t: 0.0, ring: 0.45 }, { f: 1175, t: 0.085, ring: 0.7 }].forEach(({ f, t, ring }) => {
+      [[1, 0.2], [2.01, 0.1], [3.02, 0.05]].forEach(([mult, vol]) => {
+        const osc = ac.createOscillator(), g = ac.createGain();
+        osc.connect(g); g.connect(ac.destination);
+        osc.type = 'sine'; osc.frequency.value = f * mult;
+        const t0 = now + t;
+        g.gain.setValueAtTime(0.001, t0);
+        g.gain.linearRampToValueAtTime(vol, t0 + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + ring);
+        osc.start(t0); osc.stop(t0 + ring + 0.05);
+      });
+    });
+  }
+}
+function playSoundAt(type, delayMs) {
+  if (delayMs <= 0) { playSound(type); return; }
+  setTimeout(() => playSound(type), delayMs);
+}
+
 /* ───────── deck / shoe ───────── */
 const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 const SUITS = ['♠','♥','♦','♣'];
@@ -538,7 +689,7 @@ const $ = id => document.getElementById(id);
 /* ───────── round flow ───────── */
 function newHand() {
   if (phase === 'player' || busy) return;
-  if ((shoe.length - shoePos) / shoe.length < (1 - RULES.penetration)) buildShoe();
+  if ((shoe.length - shoePos) / shoe.length < (1 - RULES.penetration)) { buildShoe(); playSound('shuffle'); }
 
   dealer = [];
   holeHidden = true;
@@ -554,6 +705,10 @@ function newHand() {
   dealer.push(draw());
   hands[0].cards.push(draw());
   dealer.push(draw());
+  playSoundAt('deal', 0);
+  playSoundAt('deal', 140);
+  playSoundAt('deal', 280);
+  playSoundAt('deal', 420);
 
   render();
 
@@ -562,6 +717,7 @@ function newHand() {
   const dShowsTen = ['10','J','Q','K','A'].includes(dealer[0].rank);
   if (pBJ || (dShowsTen && isBlackjack(dealer))) {
     holeHidden = false;
+    playSoundAt('flip', 560);
     busy = true;
     updateButtons();
     setMsg(pBJ ? 'Blackjack!' : 'Dealer checks…');
@@ -592,6 +748,7 @@ function hit() {
   const h = activeHand();
   if (h.done) return;
   h.cards.push(draw());
+  playSound('deal');
   render();
   if (isBust(h.cards) || handTotal(h.cards).total === 21) {
     h.done = true;
@@ -609,7 +766,9 @@ function doubleDown() {
   if (phase !== 'player' || busy || !canDouble(activeHand())) return;
   const h = activeHand();
   h.bet *= 2;
+  playSound('chip');
   h.cards.push(draw());
+  playSoundAt('deal', 110);
   h.done = true;
   render();
   setTimeout(advance, 400);
@@ -622,9 +781,12 @@ function split() {
   const nh = { cards: [moved], bet: BET, done: false, result: null, payout: 0, fromSplit: true };
   h.fromSplit = true;
   hands.splice(active + 1, 0, nh);
+  playSound('chip');
   // one card to each split hand
   h.cards.push(draw());
   nh.cards.push(draw());
+  playSoundAt('deal', 90);
+  playSoundAt('deal', 230);
   if (h.cards[0].rank === 'A' && RULES.splitAcesOneCard) {
     h.done = true; nh.done = true;
     render();
@@ -653,6 +815,7 @@ function dealerTurn() {
   phase = 'dealer';
   busy = true;
   holeHidden = false;
+  playSound('flip');
   render(); updateButtons();
   setMsg('Dealer plays.');
 
@@ -664,6 +827,7 @@ function dealerTurn() {
     const mustHit = total < 17 || (RULES.h17 && soft && total === 17);
     if (!mustHit) { busy = false; settleAll(); return; }
     dealer.push(draw());
+    playSound('deal');
     render();
     setMsg('Dealer draws — ' + handTotal(dealer).total + '.');
     setTimeout(step, 620);
@@ -706,8 +870,10 @@ function settleAll() {
   else if (sum < 0) { txt = 'LOSE ' + sum; col = '#E06060'; }
   else { txt = 'PUSH'; col = '#9090d0'; }
   showBanner(txt, col, bjWin);
-  if (bjWin) celebrateBlackjack();
-  if (sum > 0) monkeyMoneySpread();
+  if (bjWin) { playSound('bj'); celebrateBlackjack(); }
+  else if (sum < 0) playSound('lose');
+  else if (sum === 0) playSound('push');
+  if (sum > 0) monkeyMoneySpread();   // monkey throws the cash → ka-ching (see monkeyMoneySpread)
 
   let fcat;
   if (bjWin) fcat = 'blackjack';
@@ -856,6 +1022,7 @@ function celebrateBlackjack() {
 
 function monkeyMoneySpread() {
   const mk = $('monkey'), stage = $('stage'), layer = $('bills');
+  playSound('kaching');   // KA-CHING — cash register as the monkey flings the winnings
   // happy bounce + arm raise
   if (mk.animate) mk.animate([
     { transform: 'translateY(0) scale(1)' },
@@ -907,6 +1074,30 @@ $('b-hit').addEventListener('click', hit);
 $('b-stand').addEventListener('click', stand);
 $('b-double').addEventListener('click', doubleDown);
 $('b-split').addEventListener('click', split);
+
+/* ───────── audio: unlock on first gesture + mute toggle ───────── */
+try { soundOn = localStorage.getItem('villaSound') !== 'off'; } catch (e) {}
+function refreshSoundBtn() {
+  const b = $('b-sound');
+  b.textContent = soundOn ? '🔊' : '🔇';
+  b.classList.toggle('off', !soundOn);
+}
+refreshSoundBtn();
+$('b-sound').addEventListener('click', () => {
+  soundOn = !soundOn;
+  try { localStorage.setItem('villaSound', soundOn ? 'on' : 'off'); } catch (e) {}
+  refreshSoundBtn();
+  if (soundOn) playSound('chip');   // confirmation blip
+});
+// browsers block audio until a user gesture — resume the context on the first one
+function _unlockAudio() {
+  const ac = getACtx();
+  if (ac && ac.state === 'suspended') ac.resume();
+  window.removeEventListener('pointerdown', _unlockAudio);
+  window.removeEventListener('touchstart', _unlockAudio);
+}
+window.addEventListener('pointerdown', _unlockAudio, { passive: true });
+window.addEventListener('touchstart', _unlockAudio, { passive: true });
 
 /* ───────── boot ───────── */
 $('bg').style.backgroundImage = "url('" + BG_SRC + "')";
