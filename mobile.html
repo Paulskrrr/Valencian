@@ -384,7 +384,6 @@
   }
   .tog input:checked + .slide { background: #2a4a2f; border-color: var(--gold); }
   .tog input:checked + .slide::before { background: var(--gold); transform: translateX(22px); }
-  #set-reset { margin-top: 22px; }
 </style>
 </head>
 <body>
@@ -457,7 +456,6 @@
       <div class="set-row"><div class="lbl">Show card count<small>Running &amp; true count (Hi-Lo)</small></div>
         <label class="tog"><input type="checkbox" id="s-count"><span class="slide"></span></label></div>
 
-      <button id="set-reset" class="btn" style="width:100%">Reset to Spain defaults</button>
     </div>
   </div>
 
@@ -1138,16 +1136,6 @@ $('gear').addEventListener('click', openSettings);
 $('set-close').addEventListener('click', closeSettings);
 ['s-decks','s-h17','s-bj','s-dbl','s-das','s-resplit','s-aces','s-hints','s-count']
   .forEach(id => $(id).addEventListener('change', applySettingsFromUI));
-$('set-reset').addEventListener('click', () => {
-  Object.assign(RULES, SPAIN_DEFAULTS);
-  saveSettings();
-  syncSettingsUI();
-  updateRuleLabel();
-  applyCountVisibility();
-  buildShoe();
-  render();
-  updateButtons();
-});
 
 /* ───────── boot ───────── */
 $('bg').style.backgroundImage = "url('" + BG_SRC + "')";
